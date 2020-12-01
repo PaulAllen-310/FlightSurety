@@ -1,0 +1,198 @@
+var Test = require("../config/testConfig.js");
+var BigNumber = require("bignumber.js");
+
+contract("Flight Surety Data Tests", async (accounts) => {
+    var config;
+
+    before("setup contract", async () => {
+        config = await Test.Config(accounts);
+    });
+
+    /****************************************************************************************/
+    /* Operations and Settings                                                              */
+    /****************************************************************************************/
+
+    it(`isOperational: Contract is operational on initialisation`, async function () {
+        // Get operating status
+        let status = await config.flightSuretyData.isOperational.call();
+        assert.equal(status, true, "Incorrect initial operating status value");
+    });
+
+    it(`setOperatingStatus: Only contract owner can pause the contract`, async function () {
+        // Ensure that access is denied for non-Contract Owner account
+        let accessDenied = false;
+
+        try {
+            await config.flightSuretyData.setOperatingStatus(false, { from: config.testAddresses[2] });
+        } catch (e) {
+            accessDenied = true;
+        }
+
+        // Ensure that a require is in place preventing anyone but the contract owner from pausing the contract.
+        assert.equal(accessDenied, true, "Access not restricted to Contract Owner");
+
+        // Ensure that the data contract has not been paused.
+        let isOperational = await config.flightSuretyData.isOperational();
+        assert.equal(isOperational, true, "Data contract is unexpectedly not operational");
+    });
+
+    it(`setOperatingStatus: Contract owner can pause the contract`, async function () {
+        // Ensure that access is allowed for Contract Owner account
+        let accessDenied = false;
+
+        try {
+            await config.flightSuretyData.setOperatingStatus(false);
+        } catch (e) {
+            accessDenied = true;
+        }
+
+        // Ensure that a require is in place allowing the contract owner to pause the contract.
+        assert.equal(accessDenied, false, "Access not restricted to Contract Owner");
+
+        // Ensure that the data contract has been paused.
+        let isOperational = await config.flightSuretyData.isOperational();
+        assert.equal(isOperational, false, "Data contract is unexpectedly operational");
+
+        // Reset the operating status
+        await config.flightSuretyData.setOperatingStatus(true);
+    });
+
+    /****************************************************************************************/
+    /* Authorisation                                                                        */
+    /****************************************************************************************/
+
+    it(`authorizeCaller: Contract owner can assign access to data contract`, async function () {
+        let authorised = true;
+
+        try {
+            await config.flightSuretyData.authorizeCaller(config.testAddresses[2]);
+        } catch (e) {
+            authorised = false;
+        }
+
+        assert.equal(authorised, true, "Contract owner not able to authorise contract callers.");
+    });
+
+    it(`authorizeCaller: Only contract owner can assign access to data contract`, async function () {
+        let authorised = true;
+
+        try {
+            await config.flightSuretyData.authorizeCaller(config.testAddresses[2], { from: config.testAddresses[2] });
+        } catch (e) {
+            authorised = false;
+        }
+
+        assert.equal(authorised, false, "Another contract owner is able to authorise contract callers.");
+    });
+
+    it(`deauthorizeCaller: Contract owner can remove access to data contract`, async function () {
+        let deauthorised = true;
+
+        try {
+            await config.flightSuretyData.deauthorizeCaller(config.testAddresses[2]);
+        } catch (e) {
+            deauthorised = false;
+        }
+
+        assert.equal(deauthorised, true, "Contract owner not able to remove access to contract callers.");
+    });
+
+    it(`deauthorizeCaller: Only contract owner can remove access to data contract`, async function () {
+        let deauthorised = true;
+
+        try {
+            await config.flightSuretyData.deauthorizeCaller(config.testAddresses[2], { from: config.testAddresses[2] });
+        } catch (e) {
+            deauthorised = false;
+        }
+
+        assert.equal(deauthorised, false, "Another contract owner is able to remove access to contract callers.");
+    });
+
+    it(`deauthorizeCaller: Contract owner cannot remove their access to data contract`, async function () {
+        try {
+            await config.flightSuretyData.deauthorizeCaller(config.owner);
+        } catch (e) {
+            assert.fail("An unexpected failure when the contract owner attempts to deauthorise themselves.");
+        }
+    });
+
+    /****************************************************************************************/
+    /*  Register Airline                                                                    */
+    /****************************************************************************************/
+
+    it(`getNumberOfAirlines: Automatic registration of first airline`, async function () {
+        let numberOfAirlines = await config.flightSuretyData.getNumberOfAirlines();
+        assert.equal(numberOfAirlines, 1, "The first airline was not registered on initialisation");
+    });
+
+    it(`getAirlines: Automatic registration of first airline`, async function () {
+        const airline = await config.flightSuretyData.getAirline(config.firstAirline);
+        assert.equal(airline.id, 1, "The expected first airline id did not match.");
+        assert.equal(airline.account, config.firstAirline, "The expected first airline account did not match.");
+        assert.equal(airline.registered, true, "The expected first airline registration status did not match.");
+    });
+
+    it(`registerAirline: Access is blocked whenever contract is paused`, async function () {
+        await config.flightSuretyData.setOperatingStatus(false);
+        let blocked = false;
+
+        try {
+            await config.flightSuretyData.registerAirline(config.testAddresses[1]);
+        } catch (e) {
+            blocked = true;
+        }
+
+        assert.equal(blocked, true, "Access cannot be blocked for registerAirline");
+
+        // Set it back for other tests to work
+        await config.flightSuretyData.setOperatingStatus(true);
+    });
+
+    it(`registerAirline: Access is blocked to non-registered contracts`, async function () {
+        await config.flightSuretyData.deauthorizeCaller(config.testAddresses[2]);
+        let blocked = false;
+
+        try {
+            await config.flightSuretyData.registerAirline(config.testAddresses[1], { from: config.testAddresses[2] });
+        } catch (e) {
+            blocked = true;
+        }
+
+        assert.equal(blocked, true, "Access cannot be blocked for registerAirline to non-registered contracts");
+    });
+
+    it(`registerAirline: Multiple unique airlines can be registered`, async function () {
+        let numberOfAirlines = await config.flightSuretyData.getNumberOfAirlines();
+        assert.equal(numberOfAirlines, 1, "There should only be the first airline registered.");
+
+        // Register multiple airlines and ensure the count has been incremented each time.
+        for (let step = 2; step <= 4; step++) {
+            let airlineAddress = config.testAddresses[step];
+
+            try {
+                await config.flightSuretyData.registerAirline(airlineAddress);
+            } catch (e) {
+                assert.fail("An unexpected failure when registering an airline");
+            }
+
+            numberOfAirlines = await config.flightSuretyData.getNumberOfAirlines();
+            assert.equal(numberOfAirlines, step, "The airline should have been registered.");
+
+            const airline = await config.flightSuretyData.getAirline(airlineAddress);
+            assert.equal(airline.id, step, "The expected first airline id did not match.");
+            assert.equal(airline.account, airlineAddress, "The expected first airline account did not match.");
+            assert.equal(airline.registered, true, "The expected first airline registration status did not match.");
+        }
+
+        // Ensure that the same airline cannot be registered more than once.
+        let unique = false;
+        try {
+            await config.flightSuretyData.registerAirline(config.testAddresses[2]);
+        } catch (e) {
+            unique = true;
+        }
+
+        assert.equal(unique, true, "An airline was able to be registered more than once.");
+    });
+});
