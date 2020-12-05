@@ -114,8 +114,9 @@ contract("Flight Surety App Tests", async (accounts) => {
             const tx = await config.flightSuretyApp.fundAirline({ from: registeredAirline, value: web3.utils.toWei("10", "ether") });
 
             let airline = await config.flightSuretyData.getAirline(registeredAirline);
-            assert.equal(airline.funded, true, "The expedted airline funded status did not match.");
+            assert.equal(airline.funded, true, "The expected airline funded status did not match.");
         } catch (e) {
+            console.log(e);
             assert.fail("An airline that is registered within sufficient funds should have its status updated to funded.");
         }
     });
