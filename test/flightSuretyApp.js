@@ -12,6 +12,45 @@ contract("Flight Surety App Tests", async (accounts) => {
     });
 
     /****************************************************************************************/
+    /* Fund Airline                                                                        */
+    /****************************************************************************************/
+
+    it("fundAirline: Ensure that an airline pays sufficient funds", async () => {
+        let registeredAirline = config.firstAirline;
+
+        // Ensure that funding is rejected if the funds are not sufficient.
+        try {
+            const tx = await config.flightSuretyApp.fundAirline({ from: registeredAirline, value: web3.utils.toWei("9", "ether") });
+            assert.fail("An airline should not be able to pay insufficient funds.");
+        } catch (e) {}
+    });
+
+    it("fundAirline: Ensure that an airline is registered before paying funds", async () => {
+        let unregisteredAirline = accounts[7];
+
+        // Ensure that funding is rejected if the funds are not sufficient.
+        try {
+            const tx = await config.flightSuretyApp.fundAirline({ from: unregisteredAirline, value: web3.utils.toWei("10", "ether") });
+            assert.fail("An airline that is not registered should not be able to pay funds.");
+        } catch (e) {}
+    });
+
+    it("fundAirline: Ensure that a registered airline within sufficient funds has its funded status updated", async () => {
+        let registeredAirline = config.firstAirline;
+
+        // Ensure that funding is rejected if the funds are not sufficient.
+        try {
+            const tx = await config.flightSuretyApp.fundAirline({ from: registeredAirline, value: web3.utils.toWei("10", "ether") });
+
+            let airline = await config.flightSuretyData.getAirline(registeredAirline);
+            assert.equal(airline.funded, true, "The expected airline funded status did not match.");
+        } catch (e) {
+            console.log(e);
+            assert.fail("An airline that is registered within sufficient funds should have its status updated to funded.");
+        }
+    });
+
+    /****************************************************************************************/
     /* Register Airline                                                                     */
     /****************************************************************************************/
 
@@ -38,6 +77,8 @@ contract("Flight Surety App Tests", async (accounts) => {
             try {
                 const tx = await config.flightSuretyApp.registerAirline(newAirline, { from: registeredAirline });
                 truffleAssert.eventEmitted(tx, "registered");
+
+                await config.flightSuretyApp.fundAirline({ from: newAirline, value: web3.utils.toWei("10", "ether") });
 
                 let noOfAirlines = await config.flightSuretyData.getNumberOfAirlines();
                 assert.equal(noOfAirlines, step, "The airline should have been registered by the registered airline.");
@@ -83,41 +124,6 @@ contract("Flight Surety App Tests", async (accounts) => {
             assert.equal(noOfAirlines, 5, "The airline should have been registered as there should now be a consensus.");
         } catch (e) {
             assert.fail("A registered airline should be able to vote to register another airline.");
-        }
-    });
-
-    it("fundAirline: Ensure that an airline pays sufficient funds", async () => {
-        let registeredAirline = config.firstAirline;
-
-        // Ensure that funding is rejected if the funds are not sufficient.
-        try {
-            const tx = await config.flightSuretyApp.fundAirline({ from: registeredAirline, value: web3.utils.toWei("9", "ether") });
-            assert.fail("An airline should not be able to pay insufficient funds.");
-        } catch (e) {}
-    });
-
-    it("fundAirline: Ensure that an airline is registered before paying funds", async () => {
-        let unregisteredAirline = accounts[7];
-
-        // Ensure that funding is rejected if the funds are not sufficient.
-        try {
-            const tx = await config.flightSuretyApp.fundAirline({ from: unregisteredAirline, value: web3.utils.toWei("10", "ether") });
-            assert.fail("An airline that is not registered should not be able to pay funds.");
-        } catch (e) {}
-    });
-
-    it("fundAirline: Ensure that a registered airline within sufficient funds has its funded status updated", async () => {
-        let registeredAirline = config.firstAirline;
-
-        // Ensure that funding is rejected if the funds are not sufficient.
-        try {
-            const tx = await config.flightSuretyApp.fundAirline({ from: registeredAirline, value: web3.utils.toWei("10", "ether") });
-
-            let airline = await config.flightSuretyData.getAirline(registeredAirline);
-            assert.equal(airline.funded, true, "The expected airline funded status did not match.");
-        } catch (e) {
-            console.log(e);
-            assert.fail("An airline that is registered within sufficient funds should have its status updated to funded.");
         }
     });
 });

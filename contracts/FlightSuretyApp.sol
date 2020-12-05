@@ -88,6 +88,14 @@ contract FlightSuretyApp {
         _;
     }
 
+    modifier requireRequestFromFundedAirline() {
+        require(
+            _isFundedAirline(msg.sender),
+            "Calling airline has not provided funding."
+        );
+        _;
+    }
+
     modifier requireNewAirline(address _airline) {
         require(
             !_isRegisteredAirline(_airline),
@@ -140,6 +148,13 @@ contract FlightSuretyApp {
         return registeredAirline;
     }
 
+    function _isFundedAirline(address _airline) internal view returns (bool) {
+        bool fundedAirline = false;
+        (, , , fundedAirline) = flightSuretyData.getAirline(_airline);
+
+        return fundedAirline;
+    }
+
     function _registerFoundingAirline(address _airline)
         internal
         returns (bool success, uint256 votes)
@@ -188,8 +203,8 @@ contract FlightSuretyApp {
      *
      */
     function registerAirline(address _airline)
-        public
-        requireRequestFromRegisteredAirline
+        external
+        requireRequestFromFundedAirline
         requireNewAirline(_airline)
         returns (bool success, uint256 votes)
     {
@@ -206,7 +221,7 @@ contract FlightSuretyApp {
     }
 
     function fundAirline()
-        public
+        external
         payable
         requireSufficientFunds
         requireRequestFromRegisteredAirline
