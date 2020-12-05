@@ -86,17 +86,37 @@ contract("Flight Surety App Tests", async (accounts) => {
         }
     });
 
-    /*it("(airline) cannot register an Airline using registerAirline() if it is not funded", async () => {
-        // ARRANGE
-        let newAirline = accounts[2];
+    it("fundAirline: Ensure that an airline pays sufficient funds", async () => {
+        let registeredAirline = config.firstAirline;
 
-        // ACT
+        // Ensure that funding is rejected if the funds are not sufficient.
         try {
-            await config.flightSuretyApp.registerAirline(newAirline, { from: config.firstAirline });
+            const tx = await config.flightSuretyApp.fundAirline({ from: registeredAirline, value: web3.utils.toWei("9", "ether") });
+            assert.fail("An airline should not be able to pay insufficient funds.");
         } catch (e) {}
-        let result = await config.flightSuretyData.isAirline.call(newAirline);
+    });
 
-        // ASSERT
-        assert.equal(result, false, "Airline should not be able to register another airline if it hasn't provided funding");
-    });*/
+    it("fundAirline: Ensure that an airline is registered before paying funds", async () => {
+        let unregisteredAirline = accounts[7];
+
+        // Ensure that funding is rejected if the funds are not sufficient.
+        try {
+            const tx = await config.flightSuretyApp.fundAirline({ from: unregisteredAirline, value: web3.utils.toWei("10", "ether") });
+            assert.fail("An airline that is not registered should not be able to pay funds.");
+        } catch (e) {}
+    });
+
+    it("fundAirline: Ensure that a registered airline within sufficient funds has its funded status updated", async () => {
+        let registeredAirline = config.firstAirline;
+
+        // Ensure that funding is rejected if the funds are not sufficient.
+        try {
+            const tx = await config.flightSuretyApp.fundAirline({ from: registeredAirline, value: web3.utils.toWei("10", "ether") });
+
+            let airline = await config.flightSuretyData.getAirline(registeredAirline);
+            assert.equal(airline.funded, true, "The expedted airline funded status did not match.");
+        } catch (e) {
+            assert.fail("An airline that is registered within sufficient funds should have its status updated to funded.");
+        }
+    });
 });

@@ -96,6 +96,14 @@ contract FlightSuretyApp {
         _;
     }
 
+    modifier requireSufficientFunds() {
+        require(
+            msg.value >= (10 ether),
+            "The airline has not provided sufficient funds."
+        );
+        _;
+    }
+
     /********************************************************************************************/
     /*                                       CONSTRUCTOR                                        */
     /********************************************************************************************/
@@ -127,7 +135,7 @@ contract FlightSuretyApp {
         returns (bool)
     {
         bool registeredAirline = false;
-        (, , registeredAirline) = flightSuretyData.getAirline(_airline);
+        (, , registeredAirline, ) = flightSuretyData.getAirline(_airline);
 
         return registeredAirline;
     }
@@ -195,6 +203,15 @@ contract FlightSuretyApp {
         } else {
             return _registerAirlineByConsensus(_airline, numberOfAirlines);
         }
+    }
+
+    function fundAirline()
+        public
+        payable
+        requireSufficientFunds
+        requireRequestFromRegisteredAirline
+    {
+        flightSuretyData.updateAirlineToFunded(msg.sender);
     }
 
     /**

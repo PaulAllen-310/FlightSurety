@@ -23,6 +23,7 @@ contract FlightSuretyData is IFlightSuretyData {
         uint256 id;
         address account;
         bool registered;
+        bool funded;
     }
 
     mapping(address => Airline) private airlines;
@@ -140,22 +141,22 @@ contract FlightSuretyData is IFlightSuretyData {
      *      Can only be called from FlightSuretyApp contract
      *
      */
-    function registerAirline(address _account)
+    function registerAirline(address _airline)
         public
         requireIsOperational
         requireIsCallerAuthorized
-        requireUniqueAirline(_account)
+        requireUniqueAirline(_airline)
         returns (address)
     {
         // Add the airline and increment the number of airlines counter to reflect a new airline has been registered.
         numberOfAirlines = numberOfAirlines.add(1);
-        airlines[_account].id = numberOfAirlines;
-        airlines[_account].account = _account;
+        airlines[_airline].id = numberOfAirlines;
+        airlines[_airline].account = _airline;
 
         // Uniqueness modifier relies on this property being explicity set.
-        airlines[_account].registered = true;
+        airlines[_airline].registered = true;
 
-        return _account;
+        return _airline;
     }
 
     function getNumberOfAirlines()
@@ -168,22 +169,32 @@ contract FlightSuretyData is IFlightSuretyData {
         return numberOfAirlines;
     }
 
-    function getAirline(address _account)
-        public
+    function getAirline(address _airline)
+        external
         view
         requireIsOperational
         requireIsCallerAuthorized
         returns (
             uint256 id,
             address account,
-            bool registered
+            bool registered,
+            bool funded
         )
     {
-        id = airlines[_account].id;
-        account = airlines[_account].account;
-        registered = airlines[_account].registered;
+        id = airlines[_airline].id;
+        account = airlines[_airline].account;
+        registered = airlines[_airline].registered;
+        funded = airlines[_airline].funded;
 
-        return (id, account, registered);
+        return (id, account, registered, funded);
+    }
+
+    function updateAirlineToFunded(address _airline)
+        external
+        requireIsOperational
+        requireIsCallerAuthorized
+    {
+        airlines[_airline].funded = true;
     }
 
     /**
