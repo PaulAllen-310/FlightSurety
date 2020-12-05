@@ -18,6 +18,14 @@ contract FlightSuretyApp {
     /*                                       DATA VARIABLES                                     */
     /********************************************************************************************/
 
+    // Multi-party consenus
+    uint8 private constant M = 4;
+    mapping(address => Votes) private multiPartyConsensusVotes;
+    struct Votes {
+        uint256 noOfVoters;
+        mapping(address => bool) votedAirlines;
+    }
+
     // Flight status codees
     uint8 private constant STATUS_CODE_UNKNOWN = 0;
     uint8 private constant STATUS_CODE_ON_TIME = 10;
@@ -72,10 +80,18 @@ contract FlightSuretyApp {
         _;
     }
 
-    modifier requireRegisteredAirline() {
+    modifier requireRequestFromRegisteredAirline() {
         require(
             _isRegisteredAirline(msg.sender),
-            "An airline must be registered in order to register another airline"
+            "Caller is not a registered airline."
+        );
+        _;
+    }
+
+    modifier requireNewAirline(address _airline) {
+        require(
+            !_isRegisteredAirline(_airline),
+            "The airline has already been registered."
         );
         _;
     }
@@ -116,22 +132,69 @@ contract FlightSuretyApp {
         return registeredAirline;
     }
 
+    function _registerFoundingAirline(address _airline)
+        internal
+        returns (bool success, uint256 votes)
+    {
+        flightSuretyData.registerAirline(_airline);
+        emit registered(_airline);
+
+        // Indicate that the founding airline was registered without needing a vote.
+        return (true, 0);
+    }
+
+    function _registerAirlineByConsensus(
+        address _airline,
+        uint256 _numberOfAirlines
+    ) internal returns (bool success, uint256 votes) {
+        Votes storage voters = multiPartyConsensusVotes[_airline];
+        // Determine whether the calling airline has already attempted to register the airline.
+        require(
+            !voters.votedAirlines[msg.sender],
+            "The caller has already placed a vote to register the airline."
+        );
+
+        // Record that the caller has registered a vote for the airline.
+        voters.noOfVoters = voters.noOfVoters.add(1);
+        voters.votedAirlines[msg.sender] = true;
+
+        // There must a 50% consensus amongst the registered airlines.
+        uint256 noOfVoters = voters.noOfVoters;
+
+        if (noOfVoters < _numberOfAirlines.div(2)) {
+            return (false, noOfVoters);
+        } else {
+            // Register the new airline as there has been a consensus.
+            flightSuretyData.registerAirline(_airline);
+            emit registered(_airline);
+
+            // Tidy up the multi-party consensus votes.
+            delete (multiPartyConsensusVotes[_airline]);
+
+            return (true, noOfVoters);
+        }
+    }
+
     /**
      * @dev Add an airline to the registration queue
      *
      */
     function registerAirline(address _airline)
         public
-        requireRegisteredAirline
+        requireRequestFromRegisteredAirline
+        requireNewAirline(_airline)
         returns (bool success, uint256 votes)
     {
-        flightSuretyData.registerAirline(_airline);
-        emit registered(_airline);
+        // Identify the number of airlines that have been registered
+        // and use this to determine whether multi-party consensus is
+        // required to register an airline or not.
+        uint256 numberOfAirlines = flightSuretyData.getNumberOfAirlines();
 
-        success = true;
-        votes = 0;
-
-        return (success, votes);
+        if (numberOfAirlines < M) {
+            return _registerFoundingAirline(_airline);
+        } else {
+            return _registerAirlineByConsensus(_airline, numberOfAirlines);
+        }
     }
 
     /**
