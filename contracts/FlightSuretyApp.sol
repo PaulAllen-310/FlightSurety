@@ -50,6 +50,7 @@ contract FlightSuretyApp {
     /********************************************************************************************/
 
     event registered(address airline);
+    event funded(address airline);
 
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
@@ -227,6 +228,7 @@ contract FlightSuretyApp {
         requireRequestFromRegisteredAirline
     {
         flightSuretyData.updateAirlineToFunded(msg.sender);
+        emit funded(msg.sender);
     }
 
     /**

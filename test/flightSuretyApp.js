@@ -41,6 +41,7 @@ contract("Flight Surety App Tests", async (accounts) => {
         // Ensure that funding is rejected if the funds are not sufficient.
         try {
             const tx = await config.flightSuretyApp.fundAirline({ from: registeredAirline, value: web3.utils.toWei("10", "ether") });
+            truffleAssert.eventEmitted(tx, "funded");
 
             let airline = await config.flightSuretyData.getAirline(registeredAirline);
             assert.equal(airline.funded, true, "The expected airline funded status did not match.");
