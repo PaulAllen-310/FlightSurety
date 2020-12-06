@@ -18,6 +18,8 @@ interface IFlightSuretyData {
 
     function updateAirlineToFunded(address _airline) external;
 
+    function getNumberOfFundedAirlines() external view returns (uint256);
+
     function buy() external payable;
 
     function creditInsurees() external;

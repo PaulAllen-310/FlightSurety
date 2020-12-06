@@ -198,15 +198,45 @@ contract("Flight Surety Data Tests", async (accounts) => {
         assert.equal(unique, true, "An airline was able to be registered more than once.");
     });
 
+    /****************************************************************************************/
+    /*  Update Airline Funding                                                              */
+    /****************************************************************************************/
+
     it(`updateAirlineFunding: An airline's funding can be recorded`, async function () {
-        const airline = await config.flightSuretyData.getAirline(config.firstAirline);
+        let registeredAirline = config.firstAirline;
+
+        const airline = await config.flightSuretyData.getAirline(registeredAirline);
+        assert.equal(airline.registered, true, "The expected first airline registered status did not match.");
         assert.equal(airline.funded, false, "The expected first airline funded status did not match.");
 
         try {
-            await config.flightSuretyData.updateAirlineToFunded(config.firstAirline);
+            await config.flightSuretyData.updateAirlineToFunded(registeredAirline);
 
-            const airline = await config.flightSuretyData.getAirline(config.firstAirline);
-            assert.equal(airline.funded, true, "The expected first airline funded status was not updated.");
+            const updatedAirline = await config.flightSuretyData.getAirline(registeredAirline);
+            assert.equal(updatedAirline.funded, true, "The expected first airline funded status was not updated.");
+
+            const noOfFundedAirlines = await config.flightSuretyData.getNumberOfFundedAirlines();
+            assert.equal(noOfFundedAirlines, 1, "The expected number of funded airlines was not updated.");
+        } catch (e) {
+            assert.fail("The airline funding should have been recorded.");
+        }
+    });
+
+    it(`updateAirlineFunding: An airline's who's funding has already been recorded does not update the number of funded airlines tally.`, async function () {
+        let registeredAirline = config.firstAirline;
+
+        const airline = await config.flightSuretyData.getAirline(registeredAirline);
+        assert.equal(airline.registered, true, "The expected first airline registered status did not match.");
+        assert.equal(airline.funded, true, "The expected first airline funded status did not match.");
+
+        try {
+            await config.flightSuretyData.updateAirlineToFunded(registeredAirline);
+
+            const updatedAirline = await config.flightSuretyData.getAirline(registeredAirline);
+            assert.equal(updatedAirline.funded, true, "The expected first airline funded status was not updated.");
+
+            const noOfFundedAirlines = await config.flightSuretyData.getNumberOfFundedAirlines();
+            assert.equal(noOfFundedAirlines, 1, "The expected number of funded airlines was not updated.");
         } catch (e) {
             assert.fail("The airline funding should have been recorded.");
         }

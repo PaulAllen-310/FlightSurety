@@ -169,7 +169,7 @@ contract FlightSuretyApp {
 
     function _registerAirlineByConsensus(
         address _airline,
-        uint256 _numberOfAirlines
+        uint256 _numberOfFundedAirlines
     ) internal returns (bool success, uint256 votes) {
         Votes storage voters = multiPartyConsensusVotes[_airline];
         // Determine whether the calling airline has already attempted to register the airline.
@@ -185,7 +185,7 @@ contract FlightSuretyApp {
         // There must a 50% consensus amongst the registered airlines.
         uint256 noOfVoters = voters.noOfVoters;
 
-        if (noOfVoters < _numberOfAirlines.div(2)) {
+        if (noOfVoters < _numberOfFundedAirlines.div(2)) {
             return (false, noOfVoters);
         } else {
             // Register the new airline as there has been a consensus.
@@ -212,12 +212,14 @@ contract FlightSuretyApp {
         // Identify the number of airlines that have been registered
         // and use this to determine whether multi-party consensus is
         // required to register an airline or not.
-        uint256 numberOfAirlines = flightSuretyData.getNumberOfAirlines();
+        uint256 numberOfFundedAirlines = flightSuretyData
+            .getNumberOfFundedAirlines();
 
-        if (numberOfAirlines < M) {
+        if (numberOfFundedAirlines < M) {
             return _registerFoundingAirline(_airline);
         } else {
-            return _registerAirlineByConsensus(_airline, numberOfAirlines);
+            return
+                _registerAirlineByConsensus(_airline, numberOfFundedAirlines);
         }
     }
 

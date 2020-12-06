@@ -28,6 +28,7 @@ contract FlightSuretyData is IFlightSuretyData {
 
     mapping(address => Airline) private airlines;
     uint256 private numberOfAirlines;
+    uint256 private numberOfFundedAirlines;
 
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
@@ -194,7 +195,22 @@ contract FlightSuretyData is IFlightSuretyData {
         requireIsOperational
         requireIsCallerAuthorized
     {
+        // If the airline hasn't previously provided funding then increment the funded tally.
+        if (airlines[_airline].funded == false) {
+            numberOfFundedAirlines = numberOfFundedAirlines.add(1);
+        }
+
         airlines[_airline].funded = true;
+    }
+
+    function getNumberOfFundedAirlines()
+        external
+        view
+        requireIsOperational
+        requireIsCallerAuthorized
+        returns (uint256)
+    {
+        return numberOfFundedAirlines;
     }
 
     /**
