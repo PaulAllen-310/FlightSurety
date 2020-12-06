@@ -90,10 +90,7 @@ contract FlightSuretyApp {
     }
 
     modifier requireRequestFromFundedAirline() {
-        require(
-            _isFundedAirline(msg.sender),
-            "Calling airline has not provided funding."
-        );
+        require(_isFundedAirline(msg.sender), "Calling airline is not funded.");
         _;
     }
 

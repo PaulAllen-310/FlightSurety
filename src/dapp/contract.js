@@ -1,10 +1,9 @@
-import FlightSuretyApp from '../../build/contracts/FlightSuretyApp.json';
-import Config from './config.json';
-import Web3 from 'web3';
+import FlightSuretyApp from "../../build/contracts/FlightSuretyApp.json";
+import Config from "./config.json";
+import Web3 from "web3";
 
 export default class Contract {
     constructor(network, callback) {
-
         let config = Config[network];
         this.web3 = new Web3(new Web3.providers.HttpProvider(config.url));
         this.flightSuretyApp = new this.web3.eth.Contract(FlightSuretyApp.abi, config.appAddress);
@@ -16,16 +15,15 @@ export default class Contract {
 
     initialize(callback) {
         this.web3.eth.getAccounts((error, accts) => {
-           
             this.owner = accts[0];
 
             let counter = 1;
-            
-            while(this.airlines.length < 5) {
+
+            while (this.airlines.length < 5) {
                 this.airlines.push(accts[counter++]);
             }
 
-            while(this.passengers.length < 5) {
+            while (this.passengers.length < 5) {
                 this.passengers.push(accts[counter++]);
             }
 
@@ -34,10 +32,8 @@ export default class Contract {
     }
 
     isOperational(callback) {
-       let self = this;
-       self.flightSuretyApp.methods
-            .isOperational()
-            .call({ from: self.owner}, callback);
+        let self = this;
+        self.flightSuretyApp.methods.isOperational().call({ from: self.owner }, callback);
     }
 
     fetchFlightStatus(flight, callback) {
@@ -45,12 +41,29 @@ export default class Contract {
         let payload = {
             airline: self.airlines[0],
             flight: flight,
-            timestamp: Math.floor(Date.now() / 1000)
-        } 
-        self.flightSuretyApp.methods
-            .fetchFlightStatus(payload.airline, payload.flight, payload.timestamp)
-            .send({ from: self.owner}, (error, result) => {
-                callback(error, payload);
-            });
+            timestamp: Math.floor(Date.now() / 1000),
+        };
+        self.flightSuretyApp.methods.fetchFlightStatus(payload.airline, payload.flight, payload.timestamp).send({ from: self.owner }, (error, result) => {
+            callback(error, payload);
+        });
+    }
+
+    registerAndFundAirline(airline, funds, callback) {
+        let self = this;
+
+        console.log("self.owner: " + self.owner);
+        console.log("airline: " + airline);
+        //console.log("funds: " + funds);
+
+        self.flightSuretyApp.methods.registerAirline(airline).send({ from: self.owner }, (error, result) => {
+            //callback(error, payload);
+            console.log("error: " + error);
+            console.log("result: " + result);
+
+            /*let value = self.web3.utils.toWei(funds.toString(), "Ether");
+            self.flightSuretyApp.methods.fundAirline().send({ from: airline, value: value }, (error, result) => {
+                //callback(error, payload);
+            });*/
+        });
     }
 }

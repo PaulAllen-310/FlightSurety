@@ -44,8 +44,9 @@ contract FlightSuretyData is IFlightSuretyData {
         // Ensure that the contract owner is authorised to access the contract.
         authorizeCaller(contractOwner);
 
-        // Ensure that the first airline is registered on initialisation.
+        // Ensure that the first airline is registered and funded on initialisation.
         registerAirline(_firstAirline);
+        updateAirlineToFunded(_firstAirline);
     }
 
     /********************************************************************************************/
@@ -191,7 +192,7 @@ contract FlightSuretyData is IFlightSuretyData {
     }
 
     function updateAirlineToFunded(address _airline)
-        external
+        public
         requireIsOperational
         requireIsCallerAuthorized
     {

@@ -131,7 +131,7 @@ contract("Flight Surety Data Tests", async (accounts) => {
         assert.equal(airline.id, 1, "The expected first airline id did not match.");
         assert.equal(airline.account, config.firstAirline, "The expected first airline account did not match.");
         assert.equal(airline.registered, true, "The expected first airline registration status did not match.");
-        assert.equal(airline.funded, false, "The expected first airline funded status did not match.");
+        assert.equal(airline.funded, true, "The expected first airline funded status did not match.");
     });
 
     it(`registerAirline: Access is blocked whenever contract is paused`, async function () {
@@ -203,7 +203,7 @@ contract("Flight Surety Data Tests", async (accounts) => {
     /****************************************************************************************/
 
     it(`updateAirlineFunding: An airline's funding can be recorded`, async function () {
-        let registeredAirline = config.firstAirline;
+        let registeredAirline = config.testAddresses[2];
 
         const airline = await config.flightSuretyData.getAirline(registeredAirline);
         assert.equal(airline.registered, true, "The expected first airline registered status did not match.");
@@ -216,14 +216,14 @@ contract("Flight Surety Data Tests", async (accounts) => {
             assert.equal(updatedAirline.funded, true, "The expected first airline funded status was not updated.");
 
             const noOfFundedAirlines = await config.flightSuretyData.getNumberOfFundedAirlines();
-            assert.equal(noOfFundedAirlines, 1, "The expected number of funded airlines was not updated.");
+            assert.equal(noOfFundedAirlines, 2, "The expected number of funded airlines was not updated.");
         } catch (e) {
             assert.fail("The airline funding should have been recorded.");
         }
     });
 
     it(`updateAirlineFunding: An airline's who's funding has already been recorded does not update the number of funded airlines tally.`, async function () {
-        let registeredAirline = config.firstAirline;
+        let registeredAirline = config.testAddresses[2];
 
         const airline = await config.flightSuretyData.getAirline(registeredAirline);
         assert.equal(airline.registered, true, "The expected first airline registered status did not match.");
@@ -236,7 +236,7 @@ contract("Flight Surety Data Tests", async (accounts) => {
             assert.equal(updatedAirline.funded, true, "The expected first airline funded status was not updated.");
 
             const noOfFundedAirlines = await config.flightSuretyData.getNumberOfFundedAirlines();
-            assert.equal(noOfFundedAirlines, 1, "The expected number of funded airlines was not updated.");
+            assert.equal(noOfFundedAirlines, 2, "The expected number of funded airlines was not updated.");
         } catch (e) {
             assert.fail("The airline funding should have been recorded.");
         }

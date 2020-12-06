@@ -1,5 +1,5 @@
-var HDWalletProvider = require("truffle-hdwallet-provider");
-var mnemonic = "cricket problem endorse popular skill catalog magic slam disagree security use dad";
+//var HDWalletProvider = require("truffle-hdwallet-provider");
+//var mnemonic = "cricket problem endorse popular skill catalog magic slam disagree security use dad";
 
 module.exports = {
     networks: {
