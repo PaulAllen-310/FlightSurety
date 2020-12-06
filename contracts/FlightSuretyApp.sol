@@ -113,6 +113,16 @@ contract FlightSuretyApp {
         _;
     }
 
+    modifier requireUniqueVote(address _airline) {
+        Votes storage voters = multiPartyConsensusVotes[_airline];
+
+        require(
+            !voters.votedAirlines[msg.sender],
+            "The caller has already placed a vote to register the airline."
+        );
+        _;
+    }
+
     /********************************************************************************************/
     /*                                       CONSTRUCTOR                                        */
     /********************************************************************************************/
@@ -170,19 +180,18 @@ contract FlightSuretyApp {
     function _registerAirlineByConsensus(
         address _airline,
         uint256 _numberOfFundedAirlines
-    ) internal returns (bool success, uint256 votes) {
+    )
+        internal
+        requireUniqueVote(_airline)
+        returns (bool success, uint256 votes)
+    {
         Votes storage voters = multiPartyConsensusVotes[_airline];
-        // Determine whether the calling airline has already attempted to register the airline.
-        require(
-            !voters.votedAirlines[msg.sender],
-            "The caller has already placed a vote to register the airline."
-        );
 
         // Record that the caller has registered a vote for the airline.
         voters.noOfVoters = voters.noOfVoters.add(1);
         voters.votedAirlines[msg.sender] = true;
 
-        // There must a 50% consensus amongst the registered airlines.
+        // There must a 50% consensus amongst the funded airlines.
         uint256 noOfVoters = voters.noOfVoters;
 
         if (noOfVoters < _numberOfFundedAirlines.div(2)) {
@@ -209,7 +218,7 @@ contract FlightSuretyApp {
         requireNewAirline(_airline)
         returns (bool success, uint256 votes)
     {
-        // Identify the number of airlines that have been registered
+        // Identify the number of airlines that have been funded
         // and use this to determine whether multi-party consensus is
         // required to register an airline or not.
         uint256 numberOfFundedAirlines = flightSuretyData
