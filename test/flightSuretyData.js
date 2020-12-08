@@ -241,4 +241,10 @@ contract("Flight Surety Data Tests", async (accounts) => {
             assert.fail("The airline funding should have been recorded.");
         }
     });
+
+    /****************************************************************************************/
+    /*  Buy Insurance                                                                       */
+    /****************************************************************************************/
+
+    it(`buy: `, async function () {});
 });

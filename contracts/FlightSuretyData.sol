@@ -31,6 +31,28 @@ contract FlightSuretyData is IFlightSuretyData {
     uint256 private numberOfFundedAirlines;
 
     /********************************************************************************************/
+    /*                                       FLIGHT VARIABLES                                   */
+    /********************************************************************************************/
+
+    // Flight variables
+    struct Flight {
+        string code;
+        bool isRegistered;
+        uint8 statusCode;
+        uint256 updatedTimestamp;
+        address airline;
+    }
+    mapping(bytes32 => Flight) private flights;
+
+    /********************************************************************************************/
+    /*                                     INSURANCE VARIABLES                                  */
+    /********************************************************************************************/
+
+    /*struct Insurance {
+        
+    }*/
+
+    /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
     /********************************************************************************************/
 
@@ -135,7 +157,7 @@ contract FlightSuretyData is IFlightSuretyData {
     }
 
     /********************************************************************************************/
-    /*                                     SMART CONTRACT FUNCTIONS                             */
+    /*                                      AIRLINE FUNCTIONS                                   */
     /********************************************************************************************/
 
     /**
@@ -214,11 +236,26 @@ contract FlightSuretyData is IFlightSuretyData {
         return numberOfFundedAirlines;
     }
 
+    /********************************************************************************************/
+    /*                                       FLIGHT FUNCTIONS                                   */
+    /********************************************************************************************/
+
+    function getFlightKey(
+        address airline,
+        string memory flight,
+        uint256 timestamp
+    ) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked(airline, flight, timestamp));
+    }
+
+    /********************************************************************************************/
+    /*                                     INSURANCE FUNCTIONS                                  */
+    /********************************************************************************************/
+
     /**
      * @dev Buy insurance for a flight
      *
      */
-
     function buy()
         external
         payable
@@ -246,16 +283,11 @@ contract FlightSuretyData is IFlightSuretyData {
      *      resulting in insurance payouts, the contract should be self-sustaining
      *
      */
-
     function fund() public payable requireIsOperational {}
 
-    function getFlightKey(
-        address airline,
-        string memory flight,
-        uint256 timestamp
-    ) internal pure returns (bytes32) {
-        return keccak256(abi.encodePacked(airline, flight, timestamp));
-    }
+    /********************************************************************************************/
+    /*                                      FALLBACK FUNCTIONS                                  */
+    /********************************************************************************************/
 
     /**
      * @dev Fallback function for funding smart contract.
