@@ -32,6 +32,22 @@ interface IFlightSuretyData {
         uint256 _timestamp
     ) external returns (bytes32);
 
+    function getFlight(
+        address _airline,
+        string calldata _flight,
+        uint256 _timestamp
+    )
+        external
+        view
+        returns (
+            uint256 id,
+            string memory code,
+            bool registered,
+            uint8 statusCode,
+            uint256 timestamp,
+            address airline
+        );
+
     /********************************************************************************************/
     /*                                     INSURANCE FUNCTIONS                                  */
     /********************************************************************************************/

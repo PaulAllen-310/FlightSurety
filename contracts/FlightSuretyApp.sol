@@ -46,8 +46,13 @@ contract FlightSuretyApp {
     /*                                             EVENTS                                       */
     /********************************************************************************************/
 
-    event registered(address airline);
-    event funded(address airline);
+    event AirlineRegistered(address airline);
+    event AirlineFunded(address airline);
+    event FlightRegistered(
+        address _airline,
+        string _flight,
+        uint256 _timestamp
+    );
 
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
@@ -117,6 +122,18 @@ contract FlightSuretyApp {
         _;
     }
 
+    modifier requireNewFlight(
+        address _airline,
+        string memory _flight,
+        uint256 _timestamp
+    ) {
+        require(
+            !_isRegisteredFlight(_airline, _flight, _timestamp),
+            "The flight has already been registered."
+        );
+        _;
+    }
+
     /********************************************************************************************/
     /*                                       CONSTRUCTOR                                        */
     /********************************************************************************************/
@@ -139,7 +156,7 @@ contract FlightSuretyApp {
     }
 
     /********************************************************************************************/
-    /*                                     SMART CONTRACT FUNCTIONS                             */
+    /*                                        AIRLINE FUNCTIONS                                 */
     /********************************************************************************************/
 
     function _isRegisteredAirline(address _airline)
@@ -165,7 +182,7 @@ contract FlightSuretyApp {
         returns (bool success, uint256 votes)
     {
         flightSuretyData.registerAirline(_airline);
-        emit registered(_airline);
+        emit AirlineRegistered(_airline);
 
         // Indicate that the founding airline was registered without needing a vote.
         return (true, 0);
@@ -193,7 +210,7 @@ contract FlightSuretyApp {
         } else {
             // Register the new airline as there has been a consensus.
             flightSuretyData.registerAirline(_airline);
-            emit registered(_airline);
+            emit AirlineRegistered(_airline);
 
             // Tidy up the multi-party consensus votes.
             delete (multiPartyConsensusVotes[_airline]);
@@ -233,21 +250,50 @@ contract FlightSuretyApp {
         requireRequestFromRegisteredAirline
     {
         flightSuretyData.updateAirlineToFunded(msg.sender);
-        emit funded(msg.sender);
+        emit AirlineFunded(msg.sender);
     }
+
+    /********************************************************************************************/
+    /*                                         FLIGHT FUNCTIONS                                 */
+    /********************************************************************************************/
 
     /**
      * @dev Register a future flight for insuring.
      *
      */
+    function registerFlight(
+        address _airline,
+        string calldata _flight,
+        uint256 _timestamp
+    )
+        external
+        requireRequestFromRegisteredAirline
+        requireNewFlight(_airline, _flight, _timestamp)
+    {
+        // Register the new airline as there has been a consensus.
+        flightSuretyData.registerFlight(_airline, _flight, _timestamp);
+        emit FlightRegistered(_airline, _flight, _timestamp);
+    }
 
-    function registerFlight() external pure {}
+    function _isRegisteredFlight(
+        address _airline,
+        string memory _flight,
+        uint256 _timestamp
+    ) internal view returns (bool) {
+        bool registeredFlight = false;
+        (, , registeredFlight, , , ) = flightSuretyData.getFlight(
+            _airline,
+            _flight,
+            _timestamp
+        );
+
+        return registeredFlight;
+    }
 
     /**
      * @dev Called after oracle has updated flight status
      *
      */
-
     function processFlightStatus(
         address airline,
         string memory flight,

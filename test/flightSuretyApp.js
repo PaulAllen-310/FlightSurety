@@ -41,7 +41,7 @@ contract("Flight Surety App Tests", async (accounts) => {
         // Ensure that funding is rejected if the funds are not sufficient.
         try {
             const tx = await config.flightSuretyApp.fundAirline({ from: registeredAirline, value: web3.utils.toWei("10", "ether") });
-            truffleAssert.eventEmitted(tx, "funded");
+            truffleAssert.eventEmitted(tx, "AirlineFunded");
 
             let airline = await config.flightSuretyData.getAirline(registeredAirline);
             assert.equal(airline.funded, true, "The expected airline funded status did not match.");
@@ -77,7 +77,7 @@ contract("Flight Surety App Tests", async (accounts) => {
 
             try {
                 const tx = await config.flightSuretyApp.registerAirline(newAirline, { from: registeredAirline });
-                truffleAssert.eventEmitted(tx, "registered");
+                truffleAssert.eventEmitted(tx, "AirlineRegistered");
 
                 await config.flightSuretyApp.fundAirline({ from: newAirline, value: web3.utils.toWei("10", "ether") });
 
@@ -125,6 +125,36 @@ contract("Flight Surety App Tests", async (accounts) => {
             assert.equal(noOfAirlines, 5, "The airline should have been registered as there should now be a consensus.");
         } catch (e) {
             assert.fail("A registered airline should be able to vote to register another airline.");
+        }
+    });
+
+    /****************************************************************************************/
+    /*  Register Flight                                                                     */
+    /****************************************************************************************/
+
+    it("registerFlight: Ensure an unregistered airline cannot register a flight", async () => {
+        let unregisteredAirline = accounts[7];
+
+        try {
+            await config.flightSuretyApp.registerFlight(accounts[2], "XXX2", Date.now(), { from: unregisteredAirline });
+            assert.fail("An airline should not be able to register a flight if it is not registered.");
+        } catch (e) {
+            let noOfFlights = await config.flightSuretyData.getNumberOfFlights();
+            assert.equal(noOfFlights, 0, "The flight should not have been registered by an unregistered airline.");
+        }
+    });
+
+    it("registerFlight: A registered airline can register a new flight", async () => {
+        let registeredAirline = config.firstAirline;
+
+        try {
+            const tx = await config.flightSuretyApp.registerFlight(accounts[2], "XXX2", Date.now(), { from: registeredAirline });
+            truffleAssert.eventEmitted(tx, "FlightRegistered");
+
+            let noOfFlights = await config.flightSuretyData.getNumberOfFlights();
+            assert.equal(noOfFlights, 1, "The flight should have been registered.");
+        } catch (e) {
+            assert.fail("A registered airline should be able to register a flight.");
         }
     });
 });
