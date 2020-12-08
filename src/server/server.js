@@ -66,6 +66,7 @@ assignOracleAccounts().then((accounts) => {
 //
 
 flightSuretyApp.events.OracleRequest(function (error, event) {
+    const statuses = [0, 10, 20, 30, 40, 50];
     let index = event.returnValues.index;
     let airline = event.returnValues.airline;
     let flight = event.returnValues.flight;
@@ -80,14 +81,9 @@ flightSuretyApp.events.OracleRequest(function (error, event) {
 
         // If any of the indexes match then submit a response to the smart contract.
         if (indexes[0] == index || indexes[1] == index || indexes[2] == index) {
-            let statusCode = 10;
-
-            // Setup a canned response for the QF10 to simulate lateness.
-            if (flight == "QF10") {
-                statusCode = 20;
-            }
-
-            flightSuretyApp.methods.submitOracleResponse(index, airline, flight, timestamp, statusCode).send({ from: oracle });
+            //Randomly select a status code.
+            const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
+            flightSuretyApp.methods.submitOracleResponse(index, airline, flight, timestamp, randomStatus).send({ from: oracle });
         }
     }
 });
