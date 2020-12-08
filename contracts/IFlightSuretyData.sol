@@ -4,8 +4,6 @@ pragma solidity ^0.5.15;
 interface IFlightSuretyData {
     function registerAirline(address _airline) external returns (address);
 
-    function getNumberOfAirlines() external view returns (uint256);
-
     function getAirline(address _airline)
         external
         view
