@@ -52,7 +52,13 @@ interface IFlightSuretyData {
     /*                                     INSURANCE FUNCTIONS                                  */
     /********************************************************************************************/
 
-    function buy() external payable;
+    function buy(
+        address _airline,
+        string calldata _flight,
+        uint256 _timestamp,
+        address _passenger,
+        uint256 _amount
+    ) external;
 
     function creditInsurees() external;
 

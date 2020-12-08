@@ -50,9 +50,20 @@ contract FlightSuretyData is IFlightSuretyData {
     /*                                     INSURANCE VARIABLES                                  */
     /********************************************************************************************/
 
-    /*struct Insurance {
-        
-    }*/
+    struct Passenger {
+        address account;
+        uint256 insuredFor;
+        bool withdrawn;
+    }
+
+    struct Insurance {
+        uint256 id;
+        bytes32 flightKey;
+        mapping(address => Passenger) passengers;
+    }
+
+    mapping(bytes32 => Insurance) private insurances;
+    uint256 private numberOfInsurances;
 
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
@@ -125,6 +136,25 @@ contract FlightSuretyData is IFlightSuretyData {
             flights[flightKey].registered == false,
             "A flight can only be registered once."
         );
+        _;
+    }
+
+    modifier requireRegisteredFlight(
+        address _airline,
+        string memory _flight,
+        uint256 _timestamp
+    ) {
+        bytes32 flightKey = getFlightKey(_airline, _flight, _timestamp);
+
+        require(
+            flights[flightKey].registered == true,
+            "The flight is not registered."
+        );
+        _;
+    }
+
+    modifier requirePayment(uint256 _amount) {
+        require(_amount > 0, "Caller has not provided payment.");
         _;
     }
 
@@ -280,6 +310,9 @@ contract FlightSuretyData is IFlightSuretyData {
         // Uniqueness modifier relies on this property being explicity set.
         flights[flightKey].registered = true;
 
+        // Register a new insurance policy for the flight.
+        _registerInsurance(flightKey);
+
         return flightKey;
     }
 
@@ -335,16 +368,36 @@ contract FlightSuretyData is IFlightSuretyData {
     /*                                     INSURANCE FUNCTIONS                                  */
     /********************************************************************************************/
 
+    function _registerInsurance(bytes32 flightKey) internal {
+        // Add the insurance and increment the number of insurances counter to reflect a new insurance policy has been registered.
+        numberOfInsurances = numberOfInsurances.add(1);
+        insurances[flightKey].id = numberOfInsurances;
+        insurances[flightKey].flightKey = flightKey;
+    }
+
     /**
      * @dev Buy insurance for a flight
      *
      */
-    function buy()
+    function buy(
+        address _airline,
+        string calldata _flight,
+        uint256 _timestamp,
+        address _passenger,
+        uint256 _amount
+    )
         external
-        payable
         requireIsOperational
         requireIsCallerAuthorized
-    {}
+        requirePayment(_amount)
+        requireRegisteredFlight(_airline, _flight, _timestamp)
+    {
+        bytes32 flightKey = getFlightKey(_airline, _flight, _timestamp);
+
+        // Record that a passenger has bought an insurance policy for a flight.
+        insurances[flightKey].passengers[msg.sender].account = _passenger;
+        insurances[flightKey].passengers[msg.sender].insuredFor = _amount;
+    }
 
     /**
      *  @dev Credits payouts to insurees

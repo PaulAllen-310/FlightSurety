@@ -1,6 +1,8 @@
 var Test = require("../config/testConfig.js");
 var BigNumber = require("bignumber.js");
 
+const now = Date.now();
+
 contract("Flight Surety Data Tests", async (accounts) => {
     var config;
 
@@ -251,7 +253,7 @@ contract("Flight Surety Data Tests", async (accounts) => {
         let blocked = false;
 
         try {
-            await config.flightSuretyData.registerFlight(config.testAddresses[1], "XXXX", Date.now());
+            await config.flightSuretyData.registerFlight(config.testAddresses[1], "XXXX", now);
         } catch (e) {
             blocked = true;
         }
@@ -267,7 +269,7 @@ contract("Flight Surety Data Tests", async (accounts) => {
         let blocked = false;
 
         try {
-            await config.flightSuretyData.registerFlight(config.testAddresses[1], "XXXX", Date.now(), { from: config.testAddresses[2] });
+            await config.flightSuretyData.registerFlight(config.testAddresses[1], "XXXX", now, { from: config.testAddresses[2] });
         } catch (e) {
             blocked = true;
         }
@@ -276,8 +278,6 @@ contract("Flight Surety Data Tests", async (accounts) => {
     });
 
     it(`registerFlight: Multiple unique flights can be registered`, async function () {
-        const now = Date.now();
-
         let numberOfFlights = await config.flightSuretyData.getNumberOfFlights();
         assert.equal(numberOfFlights, 0, "There should be no flights registered.");
 
@@ -312,5 +312,41 @@ contract("Flight Surety Data Tests", async (accounts) => {
         }
 
         assert.equal(unique, true, "A flight was able to be registered more than once.");
+    });
+
+    /****************************************************************************************/
+    /*  Buy Insurance                                                                       */
+    /****************************************************************************************/
+
+    it(`buy: Ensure payment is provided`, async function () {
+        const airline = config.testAddresses[1];
+        const passenger = config.testAddresses[9];
+
+        try {
+            await config.flightSuretyData.buy(airline, "XXX1", now, passenger, 0);
+            assert.fail("Should not have been able to buy insurance.");
+        } catch (e) {}
+    });
+
+    it(`buy: Ensure the flight is registered`, async function () {
+        const airline = config.testAddresses[8];
+        const passenger = config.testAddresses[9];
+
+        try {
+            await config.flightSuretyData.buy(airline, "XXX8", now, passenger, 0);
+            assert.fail("Should not have been able to buy insurance.");
+        } catch (e) {}
+    });
+
+    it(`buy: Purchase an insurance policy`, async function () {
+        const airline = config.testAddresses[1];
+        const passenger = accounts[2];
+
+        try {
+            await config.flightSuretyData.buy(airline, "XXX1", now, passenger, 1);
+        } catch (e) {
+            console.log(e);
+            assert.fail("Should have been able to buy insurance.");
+        }
     });
 });
