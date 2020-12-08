@@ -15,6 +15,7 @@ let flightSuretyApp = new web3.eth.Contract(FlightSuretyApp.abi, config.appAddre
 let accountsAsOracles = []; // Store the accounts being used as oracles.
 let oracleToIndexesList = []; // Store the indexes assigned to each oracle.
 
+// Assign twenty accounts to be oracles.
 function assignOracleAccounts() {
     return new Promise((resolve) => {
         web3.eth
@@ -30,6 +31,7 @@ function assignOracleAccounts() {
     });
 }
 
+// Register each of the oracle accounts with the smart contract.
 function makeOracleRequests(accounts) {
     for (let count = 0; count < accountsAsOracles.length; count++) {
         let account = accountsAsOracles[count];
@@ -43,6 +45,7 @@ function makeOracleRequests(accounts) {
     }
 }
 
+// Find out what the indexes are for each oracle and store them so that we can match them when the OracleRequest event is triggered.
 function storeOracleToIndex(account) {
     flightSuretyApp.methods
         .getMyIndexes()
@@ -53,7 +56,7 @@ function storeOracleToIndex(account) {
         });
 }
 
-// Assign 20 accounts to be oracles and then register them with the smart contract.
+// Kick off the registration process when the server starts up.
 assignOracleAccounts().then((accounts) => {
     makeOracleRequests(accounts);
 });
@@ -63,26 +66,40 @@ assignOracleAccounts().then((accounts) => {
 //
 
 flightSuretyApp.events.OracleRequest(function (error, event) {
-    console.log("Error: " + error);
-
     let index = event.returnValues.index;
     let airline = event.returnValues.airline;
     let flight = event.returnValues.flight;
     let timestamp = event.returnValues.timestamp;
 
     console.log("Processing oracle request for index: " + index + " airline: " + airline + " flight: " + flight + " timestamp: " + timestamp);
-    /*for (let count = 0; count < accountsAsOracles.length; count++) {
+
+    // For all the oracles that match the index provided, submit a response to the smart contract.
+    for (let count = 0; count < accountsAsOracles.length; count++) {
         let oracle = accountsAsOracles[count];
         let indexes = oracleToIndexesList[count];
 
+        // If any of the indexes match then submit a response to the smart contract.
         if (indexes[0] == index || indexes[1] == index || indexes[2] == index) {
+            let statusCode = 10;
+
+            // Setup a canned response for the QF10 to simulate lateness.
             if (flight == "QF10") {
-                submitOracleResponse(oracle, index, airline, flight, timestamp, 20);
-            } else {
-                submitOracleResponse(oracle, index, airline, flight, timestamp, 10);
+                statusCode = 20;
             }
+
+            flightSuretyApp.methods.submitOracleResponse(index, airline, flight, timestamp, statusCode).send({ from: oracle });
         }
-    }*/
+    }
+});
+
+// Used for debug purposes to ensure the oracle response to the smart contract triggered processing of the flight status.
+flightSuretyApp.events.FlightStatusInfo(function (error, event) {
+    let airline = event.returnValues.airline;
+    let flight = event.returnValues.flight;
+    let timestamp = event.returnValues.timestamp;
+    let status = event.returnValues.status;
+
+    console.log("Received flight status info for airline: " + airline + " flight: " + flight + " timestamp: " + timestamp + " status: " + status);
 });
 
 //
