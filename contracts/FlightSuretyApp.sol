@@ -15,18 +15,10 @@ contract FlightSuretyApp {
     using SafeMath for uint256; // Allow SafeMath functions to be called for all uint256 types (similar to "prototype" in Javascript)
 
     /********************************************************************************************/
-    /*                                       DATA VARIABLES                                     */
+    /*                                         CONSTANTS                                        */
     /********************************************************************************************/
 
-    // Multi-party consenus
-    uint8 private constant M = 4;
-    mapping(address => Votes) private multiPartyConsensusVotes;
-    struct Votes {
-        uint256 noOfVoters;
-        mapping(address => bool) votedAirlines;
-    }
-
-    // Flight status codees
+    // Flight status codes
     uint8 private constant STATUS_CODE_UNKNOWN = 0;
     uint8 private constant STATUS_CODE_ON_TIME = 10;
     uint8 private constant STATUS_CODE_LATE_AIRLINE = 20;
@@ -34,9 +26,23 @@ contract FlightSuretyApp {
     uint8 private constant STATUS_CODE_LATE_TECHNICAL = 40;
     uint8 private constant STATUS_CODE_LATE_OTHER = 50;
 
+    /********************************************************************************************/
+    /*                                       DATA VARIABLES                                     */
+    /********************************************************************************************/
+
+    // Contract variables
     address private contractOwner; // Account used to deploy contract
     IFlightSuretyData private flightSuretyData;
 
+    // Multi-party consenus variables
+    uint8 private constant M = 4;
+    mapping(address => Votes) private multiPartyConsensusVotes;
+    struct Votes {
+        uint256 noOfVoters;
+        mapping(address => bool) votedAirlines;
+    }
+
+    // Flight variables variables
     struct Flight {
         bool isRegistered;
         uint8 statusCode;
@@ -279,6 +285,7 @@ contract FlightSuretyApp {
             isOpen: true
         });
 
+        // Oracles are listening for this event to know when they should submit a response.
         emit OracleRequest(index, airline, flight, timestamp);
     }
 
@@ -346,6 +353,7 @@ contract FlightSuretyApp {
 
         uint8[3] memory indexes = generateIndexes(msg.sender);
 
+        // Assign the oracle that is currently calling to the indexes.
         oracles[msg.sender] = Oracle({isRegistered: true, indexes: indexes});
     }
 

@@ -43,7 +43,12 @@ export default class Contract {
             flight: flight,
             timestamp: Math.floor(Date.now() / 1000),
         };
+
+        console.log("Fetching the flight status for flight: " + payload.flight + " airline: " + payload.airline + " timestamp: " + payload.timestamp);
+        console.log("Transaction being sent using account: " + self.owner);
+
         self.flightSuretyApp.methods.fetchFlightStatus(payload.airline, payload.flight, payload.timestamp).send({ from: self.owner }, (error, result) => {
+            console.log("Error: " + error);
             callback(error, payload);
         });
     }
