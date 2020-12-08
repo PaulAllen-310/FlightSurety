@@ -2,6 +2,10 @@
 pragma solidity ^0.5.15;
 
 interface IFlightSuretyData {
+    /********************************************************************************************/
+    /*                                      AIRLINE FUNCTIONS                                   */
+    /********************************************************************************************/
+
     function registerAirline(address _airline) external returns (address);
 
     function getAirline(address _airline)
@@ -18,11 +22,29 @@ interface IFlightSuretyData {
 
     function getNumberOfFundedAirlines() external view returns (uint256);
 
+    /********************************************************************************************/
+    /*                                       FLIGHT FUNCTIONS                                   */
+    /********************************************************************************************/
+
+    function registerFlight(
+        address _airline,
+        string calldata _flight,
+        uint256 _timestamp
+    ) external returns (bytes32);
+
+    /********************************************************************************************/
+    /*                                     INSURANCE FUNCTIONS                                  */
+    /********************************************************************************************/
+
     function buy() external payable;
 
     function creditInsurees() external;
 
     function pay() external;
+
+    /********************************************************************************************/
+    /*                                       UTILITY FUNCTIONS                                  */
+    /********************************************************************************************/
 
     function isOperational() external view returns (bool);
 

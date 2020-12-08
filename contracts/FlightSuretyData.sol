@@ -34,15 +34,17 @@ contract FlightSuretyData is IFlightSuretyData {
     /*                                       FLIGHT VARIABLES                                   */
     /********************************************************************************************/
 
-    // Flight variables
     struct Flight {
+        uint256 id;
         string code;
-        bool isRegistered;
+        bool registered;
         uint8 statusCode;
         uint256 updatedTimestamp;
         address airline;
     }
+
     mapping(bytes32 => Flight) private flights;
+    uint256 private numberOfFlights;
 
     /********************************************************************************************/
     /*                                     INSURANCE VARIABLES                                  */
@@ -108,6 +110,20 @@ contract FlightSuretyData is IFlightSuretyData {
         require(
             airlines[_airline].registered == false,
             "An airline can only be registered once."
+        );
+        _;
+    }
+
+    modifier requireUniqueFlight(
+        address _airline,
+        string memory _flight,
+        uint256 _timestamp
+    ) {
+        bytes32 flightKey = getFlightKey(_airline, _flight, _timestamp);
+
+        require(
+            flights[flightKey].registered == false,
+            "A flight can only be registered once."
         );
         _;
     }
@@ -239,6 +255,73 @@ contract FlightSuretyData is IFlightSuretyData {
     /********************************************************************************************/
     /*                                       FLIGHT FUNCTIONS                                   */
     /********************************************************************************************/
+
+    function registerFlight(
+        address _airline,
+        string calldata _flight,
+        uint256 _timestamp
+    )
+        external
+        requireIsOperational
+        requireIsCallerAuthorized
+        requireUniqueFlight(_airline, _flight, _timestamp)
+        returns (bytes32)
+    {
+        bytes32 flightKey = getFlightKey(_airline, _flight, _timestamp);
+
+        // Add the airline and increment the number of airlines counter to reflect a new airline has been registered.
+        numberOfFlights = numberOfFlights.add(1);
+        flights[flightKey].id = numberOfFlights;
+        flights[flightKey].code = _flight;
+        flights[flightKey].statusCode = 0;
+        flights[flightKey].updatedTimestamp = _timestamp;
+        flights[flightKey].airline = _airline;
+
+        // Uniqueness modifier relies on this property being explicity set.
+        flights[flightKey].registered = true;
+
+        return flightKey;
+    }
+
+    function getNumberOfFlights()
+        external
+        view
+        requireIsOperational
+        requireIsCallerAuthorized
+        returns (uint256)
+    {
+        return numberOfFlights;
+    }
+
+    function getFlight(
+        address _airline,
+        string calldata _flight,
+        uint256 _timestamp
+    )
+        external
+        view
+        requireIsOperational
+        requireIsCallerAuthorized
+        returns (
+            uint256 id,
+            string memory code,
+            bool registered,
+            uint8 statusCode,
+            uint256 timestamp,
+            address airline
+        )
+    {
+        bytes32 flightKey = getFlightKey(_airline, _flight, _timestamp);
+
+        id = flights[flightKey].id;
+        code = flights[flightKey].code;
+        registered = flights[flightKey].registered;
+        statusCode = flights[flightKey].statusCode;
+        timestamp = flights[flightKey].updatedTimestamp;
+        airline = flights[flightKey].airline;
+
+        return (id, code, registered, statusCode, timestamp, airline);
+    }
 
     function getFlightKey(
         address airline,

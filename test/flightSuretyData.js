@@ -243,8 +243,74 @@ contract("Flight Surety Data Tests", async (accounts) => {
     });
 
     /****************************************************************************************/
-    /*  Buy Insurance                                                                       */
+    /*  Register Flight                                                                     */
     /****************************************************************************************/
 
-    it(`buy: `, async function () {});
+    it(`registerFlight: Access is blocked whenever contract is paused`, async function () {
+        await config.flightSuretyData.setOperatingStatus(false);
+        let blocked = false;
+
+        try {
+            await config.flightSuretyData.registerFlight(config.testAddresses[1], "XXXX", Date.now());
+        } catch (e) {
+            blocked = true;
+        }
+
+        assert.equal(blocked, true, "Access cannot be blocked for registerFlight");
+
+        // Set it back for other tests to work
+        await config.flightSuretyData.setOperatingStatus(true);
+    });
+
+    it(`registerFlight: Access is blocked to non-registered contracts`, async function () {
+        await config.flightSuretyData.deauthorizeCaller(config.testAddresses[2]);
+        let blocked = false;
+
+        try {
+            await config.flightSuretyData.registerFlight(config.testAddresses[1], "XXXX", Date.now(), { from: config.testAddresses[2] });
+        } catch (e) {
+            blocked = true;
+        }
+
+        assert.equal(blocked, true, "Access cannot be blocked for registerFlight to non-registered contracts");
+    });
+
+    it(`registerFlight: Multiple unique flights can be registered`, async function () {
+        const now = Date.now();
+
+        let numberOfFlights = await config.flightSuretyData.getNumberOfFlights();
+        assert.equal(numberOfFlights, 0, "There should be no flights registered.");
+
+        // Register multiple flights and ensure the count has been incremented each time.
+        for (let step = 1; step <= 5; step++) {
+            const airlineAddress = config.testAddresses[step];
+            const code = "XXX" + step;
+
+            try {
+                await config.flightSuretyData.registerFlight(airlineAddress, code, now);
+            } catch (e) {
+                assert.fail("An unexpected failure when registering a flight");
+            }
+
+            let numberOfFlights = await config.flightSuretyData.getNumberOfFlights();
+            assert.equal(numberOfFlights, step, "The flight should have been registered.");
+
+            const flight = await config.flightSuretyData.getFlight(airlineAddress, code, now);
+            assert.equal(flight.id, step, "The expected first flight id did not match.");
+            assert.equal(flight.code, code, "The expected first flight code did not match.");
+            assert.equal(flight.registered, true, "The expected first flight registration status did not match.");
+            assert.equal(flight.statusCode, 0, "The expected first flight status code did not match.");
+            assert.equal(flight.timestamp, now, "The expected first flight timestamp did not match.");
+        }
+
+        // Ensure that the same flight cannot be registered more than once.
+        let unique = false;
+        try {
+            await config.flightSuretyData.registerFlight(config.testAddresses[2], "XXX2", now);
+        } catch (e) {
+            unique = true;
+        }
+
+        assert.equal(unique, true, "A flight was able to be registered more than once.");
+    });
 });
