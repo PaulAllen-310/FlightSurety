@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.4.25;
+pragma solidity ^0.5.15;
 
 interface IFlightSuretyData {
     function registerAirline(address _airline) external returns (address);

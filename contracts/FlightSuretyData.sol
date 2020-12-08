@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.4.25;
+pragma solidity ^0.5.15;
 
 import "../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./IFlightSuretyData.sol";
