@@ -48,10 +48,13 @@ contract FlightSuretyApp {
 
     event AirlineRegistered(address airline);
     event AirlineFunded(address airline);
-    event FlightRegistered(
-        address _airline,
-        string _flight,
-        uint256 _timestamp
+    event FlightRegistered(address airline, string flight, uint256 timestamp);
+    event PassengerInsured(
+        address airline,
+        string flight,
+        uint256 timestamp,
+        address passenger,
+        uint256 amount
     );
 
     /********************************************************************************************/
@@ -130,6 +133,38 @@ contract FlightSuretyApp {
         require(
             !_isRegisteredFlight(_airline, _flight, _timestamp),
             "The flight has already been registered."
+        );
+        _;
+    }
+
+    modifier requireInsurancePayment() {
+        require(
+            msg.value > 0 && msg.value <= (1 ether),
+            "The passenger has not provided the correct insurance amount."
+        );
+        _;
+    }
+
+    modifier requireRegisteredFlight(
+        address _airline,
+        string memory _flight,
+        uint256 _timestamp
+    ) {
+        require(
+            _isRegisteredFlight(_airline, _flight, _timestamp),
+            "The flight has not been registered."
+        );
+        _;
+    }
+
+    modifier requireNewInsurance(
+        address _airline,
+        string memory _flight,
+        uint256 _timestamp
+    ) {
+        require(
+            !_isPassengerInsured(_airline, _flight, _timestamp),
+            "The passenger is already insured for the flight."
         );
         _;
     }
@@ -300,6 +335,55 @@ contract FlightSuretyApp {
         uint256 timestamp,
         uint8 statusCode
     ) internal pure {}
+
+    /********************************************************************************************/
+    /*                                       INSURANCE FUNCTIONS                                */
+    /********************************************************************************************/
+
+    function _isPassengerInsured(
+        address _airline,
+        string memory _flight,
+        uint256 _timestamp
+    ) internal view returns (bool) {
+        bool passengerInsured = false;
+
+        (passengerInsured, ) = flightSuretyData.getInsurance(
+            _airline,
+            _flight,
+            _timestamp,
+            msg.sender
+        );
+
+        return passengerInsured;
+    }
+
+    function buy(
+        address _airline,
+        string calldata _flight,
+        uint256 _timestamp
+    )
+        external
+        payable
+        requireInsurancePayment
+        requireRegisteredFlight(_airline, _flight, _timestamp)
+        requireNewInsurance(_airline, _flight, _timestamp)
+    {
+        flightSuretyData.buy(
+            _airline,
+            _flight,
+            _timestamp,
+            msg.sender,
+            msg.value
+        );
+
+        emit PassengerInsured(
+            _airline,
+            _flight,
+            _timestamp,
+            msg.sender,
+            msg.value
+        );
+    }
 
     /********************************************************************************************/
     /*                                        ORACLE FUNCTIONS                                  */

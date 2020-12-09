@@ -318,34 +318,18 @@ contract("Flight Surety Data Tests", async (accounts) => {
     /*  Buy Insurance                                                                       */
     /****************************************************************************************/
 
-    it(`buy: Ensure payment is provided`, async function () {
-        const airline = config.testAddresses[1];
-        const passenger = config.testAddresses[9];
-
-        try {
-            await config.flightSuretyData.buy(airline, "XXX1", now, passenger, 0);
-            assert.fail("Should not have been able to buy insurance.");
-        } catch (e) {}
-    });
-
-    it(`buy: Ensure the flight is registered`, async function () {
-        const airline = config.testAddresses[8];
-        const passenger = config.testAddresses[9];
-
-        try {
-            await config.flightSuretyData.buy(airline, "XXX8", now, passenger, 0);
-            assert.fail("Should not have been able to buy insurance.");
-        } catch (e) {}
-    });
-
     it(`buy: Purchase an insurance policy`, async function () {
         const airline = config.testAddresses[1];
         const passenger = accounts[2];
+        const amount = 10000000;
 
         try {
-            await config.flightSuretyData.buy(airline, "XXX1", now, passenger, 1);
+            await config.flightSuretyData.buy(airline, "XXX1", now, passenger, amount);
+
+            let insurance = await config.flightSuretyData.getInsurance(airline, "XXX1", now, passenger);
+            assert.equal(insurance.insured, true, "The expected passenger insured status did not match.");
+            assert.equal(insurance.insuredFor, amount, "The expected passenger insured amount did not match.");
         } catch (e) {
-            console.log(e);
             assert.fail("Should have been able to buy insurance.");
         }
     });

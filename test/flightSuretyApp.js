@@ -2,6 +2,8 @@ var Test = require("../config/testConfig.js");
 var BigNumber = require("bignumber.js");
 var truffleAssert = require("truffle-assertions");
 
+const now = Date.now();
+
 contract("Flight Surety App Tests", async (accounts) => {
     var config;
     before("setup contract", async () => {
@@ -136,7 +138,7 @@ contract("Flight Surety App Tests", async (accounts) => {
         let unregisteredAirline = accounts[7];
 
         try {
-            await config.flightSuretyApp.registerFlight(accounts[2], "XXX2", Date.now(), { from: unregisteredAirline });
+            await config.flightSuretyApp.registerFlight(accounts[2], "XXX2", now, { from: unregisteredAirline });
             assert.fail("An airline should not be able to register a flight if it is not registered.");
         } catch (e) {
             let noOfFlights = await config.flightSuretyData.getNumberOfFlights();
@@ -148,7 +150,7 @@ contract("Flight Surety App Tests", async (accounts) => {
         let registeredAirline = config.firstAirline;
 
         try {
-            const tx = await config.flightSuretyApp.registerFlight(accounts[2], "XXX2", Date.now(), { from: registeredAirline });
+            const tx = await config.flightSuretyApp.registerFlight(accounts[2], "XXX2", now, { from: registeredAirline });
             truffleAssert.eventEmitted(tx, "FlightRegistered");
 
             let noOfFlights = await config.flightSuretyData.getNumberOfFlights();
@@ -156,5 +158,74 @@ contract("Flight Surety App Tests", async (accounts) => {
         } catch (e) {
             assert.fail("A registered airline should be able to register a flight.");
         }
+    });
+
+    /****************************************************************************************/
+    /*  Buy Insurance                                                                       */
+    /****************************************************************************************/
+
+    it("buy: Ensure the correct payment amount is provided", async () => {
+        let passenger = config.testAddresses[1];
+        let airline = accounts[2];
+
+        try {
+            await config.flightSuretyApp.buy(airline, "XXX2", now, { from: passenger, value: web3.utils.toWei("2", "ether") });
+            assert.fail("A passenger should not be able to buy insurance for 2 ether.");
+        } catch (e) {
+            let insurance = await config.flightSuretyData.getInsurance(airline, "XXX2", now, passenger);
+            assert.equal(insurance.insured, false, "The expected passenger insured status did not match.");
+            assert.equal(insurance.insuredFor, 0, "The expected passenger insured amount did not match.");
+        }
+
+        try {
+            await config.flightSuretyApp.buy(airline, "XXX2", now, { from: passenger });
+            assert.fail("A passenger should not be able to buy insurance without providing some ether.");
+        } catch (e) {
+            let insurance = await config.flightSuretyData.getInsurance(airline, "XXX2", now, passenger);
+            assert.equal(insurance.insured, false, "The expected passenger insured status did not match.");
+            assert.equal(insurance.insuredFor, 0, "The expected passenger insured amount did not match.");
+        }
+    });
+
+    it("buy: Ensure the flight has been registered", async () => {
+        let passenger = config.testAddresses[1];
+        let airline = accounts[9];
+
+        try {
+            await config.flightSuretyApp.buy(airline, "XXX9", now, { from: passenger, value: web3.utils.toWei("1", "ether") });
+            assert.fail("A passenger should not be able to buy insurance for a flight that hasn't been registered.");
+        } catch (e) {
+            let insurance = await config.flightSuretyData.getInsurance(airline, "XXX2", now, passenger);
+            assert.equal(insurance.insured, false, "The expected passenger insured status did not match.");
+            assert.equal(insurance.insuredFor, 0, "The expected passenger insured amount did not match.");
+        }
+    });
+
+    it("buy: Ensure a new passenger for a flight can purchase insurance", async () => {
+        let passenger = accounts[8];
+        let airline = accounts[2];
+        let amount = web3.utils.toWei("1", "ether");
+
+        try {
+            const tx = await config.flightSuretyApp.buy(airline, "XXX2", now, { from: passenger, value: amount });
+            truffleAssert.eventEmitted(tx, "PassengerInsured");
+
+            let insurance = await config.flightSuretyData.getInsurance(airline, "XXX2", now, passenger);
+            assert.equal(insurance.insured, true, "The expected passenger insured status did not match.");
+            assert.equal(insurance.insuredFor, amount, "The expected passenger insured amount did not match.");
+        } catch (e) {
+            assert.fail("A passenger should able to buy insurance for a flight.");
+        }
+    });
+
+    it("buy: Ensure an existing passenger for a flight cannot purchase another insurance policy", async () => {
+        let passenger = accounts[8];
+        let airline = accounts[2];
+        let amount = web3.utils.toWei("1", "ether");
+
+        try {
+            const tx = await config.flightSuretyApp.buy(airline, "XXX2", now, { from: passenger, value: amount });
+            assert.fail("A passenger should not able to buy insurance for a flight more than once.");
+        } catch (e) {}
     });
 });

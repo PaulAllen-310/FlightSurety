@@ -52,6 +52,7 @@ contract FlightSuretyData is IFlightSuretyData {
 
     struct Passenger {
         address account;
+        bool insured;
         uint256 insuredFor;
         bool withdrawn;
     }
@@ -136,25 +137,6 @@ contract FlightSuretyData is IFlightSuretyData {
             flights[flightKey].registered == false,
             "A flight can only be registered once."
         );
-        _;
-    }
-
-    modifier requireRegisteredFlight(
-        address _airline,
-        string memory _flight,
-        uint256 _timestamp
-    ) {
-        bytes32 flightKey = getFlightKey(_airline, _flight, _timestamp);
-
-        require(
-            flights[flightKey].registered == true,
-            "The flight is not registered."
-        );
-        _;
-    }
-
-    modifier requirePayment(uint256 _amount) {
-        require(_amount > 0, "Caller has not provided payment.");
         _;
     }
 
@@ -385,18 +367,29 @@ contract FlightSuretyData is IFlightSuretyData {
         uint256 _timestamp,
         address _passenger,
         uint256 _amount
-    )
-        external
-        requireIsOperational
-        requireIsCallerAuthorized
-        requirePayment(_amount)
-        requireRegisteredFlight(_airline, _flight, _timestamp)
-    {
+    ) external requireIsOperational requireIsCallerAuthorized {
         bytes32 flightKey = getFlightKey(_airline, _flight, _timestamp);
 
-        // Record that a passenger has bought an insurance policy for a flight.
-        insurances[flightKey].passengers[msg.sender].account = _passenger;
-        insurances[flightKey].passengers[msg.sender].insuredFor = _amount;
+        // Be graceful, but ensure the flight has been registered before registering the insurance purchase.
+        if (flights[flightKey].registered) {
+            insurances[flightKey].passengers[_passenger].account = _passenger;
+            insurances[flightKey].passengers[_passenger].insuredFor = _amount;
+            insurances[flightKey].passengers[_passenger].insured = true;
+        }
+    }
+
+    function getInsurance(
+        address _airline,
+        string calldata _flight,
+        uint256 _timestamp,
+        address _passenger
+    ) external view returns (bool insured, uint256 insuredFor) {
+        bytes32 flightKey = getFlightKey(_airline, _flight, _timestamp);
+
+        insured = insurances[flightKey].passengers[_passenger].insured;
+        insuredFor = insurances[flightKey].passengers[_passenger].insuredFor;
+
+        return (insured, insuredFor);
     }
 
     /**

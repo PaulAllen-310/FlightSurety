@@ -60,6 +60,13 @@ interface IFlightSuretyData {
         uint256 _amount
     ) external;
 
+    function getInsurance(
+        address _airline,
+        string calldata _flight,
+        uint256 _timestamp,
+        address _passenger
+    ) external view returns (bool insured, uint256 insuredFor);
+
     function creditInsurees() external;
 
     function pay() external;
