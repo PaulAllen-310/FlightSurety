@@ -26,6 +26,9 @@ contract FlightSuretyApp {
     uint8 private constant STATUS_CODE_LATE_TECHNICAL = 40;
     uint8 private constant STATUS_CODE_LATE_OTHER = 50;
 
+    // Credit factor for flight delays
+    uint8 private constant FLIGHT_DELAY_CREDIT_FACTOR = 150;
+
     /********************************************************************************************/
     /*                                       DATA VARIABLES                                     */
     /********************************************************************************************/
@@ -42,6 +45,9 @@ contract FlightSuretyApp {
         mapping(address => bool) votedAirlines;
     }
 
+    // Distinguish the airline fault codes
+    mapping(uint8 => bool) private airlineFaults;
+
     /********************************************************************************************/
     /*                                             EVENTS                                       */
     /********************************************************************************************/
@@ -55,6 +61,12 @@ contract FlightSuretyApp {
         uint256 timestamp,
         address passenger,
         uint256 amount
+    );
+    event InsuranceCredit(
+        address airline,
+        string flight,
+        uint256 timestamp,
+        uint8 statusCode
     );
 
     /********************************************************************************************/
@@ -180,6 +192,11 @@ contract FlightSuretyApp {
     constructor(address _flightSuretyData) public {
         contractOwner = msg.sender;
         flightSuretyData = IFlightSuretyData(_flightSuretyData);
+
+        airlineFaults[STATUS_CODE_LATE_AIRLINE] = true;
+        airlineFaults[STATUS_CODE_LATE_WEATHER] = true;
+        airlineFaults[STATUS_CODE_LATE_TECHNICAL] = true;
+        airlineFaults[STATUS_CODE_LATE_OTHER] = true;
     }
 
     /********************************************************************************************/
@@ -334,7 +351,20 @@ contract FlightSuretyApp {
         string memory flight,
         uint256 timestamp,
         uint8 statusCode
-    ) internal pure {}
+    ) internal {
+        // If the airline is at fault for a delay then credit all passengers that are insured.
+        if (airlineFaults[statusCode]) {
+            flightSuretyData.creditInsurees(
+                airline,
+                flight,
+                timestamp,
+                statusCode,
+                FLIGHT_DELAY_CREDIT_FACTOR
+            );
+
+            emit InsuranceCredit(airline, flight, timestamp, statusCode);
+        }
+    }
 
     /********************************************************************************************/
     /*                                       INSURANCE FUNCTIONS                                */
@@ -347,7 +377,7 @@ contract FlightSuretyApp {
     ) internal view returns (bool) {
         bool passengerInsured = false;
 
-        (passengerInsured, ) = flightSuretyData.getInsurance(
+        (passengerInsured, , ) = flightSuretyData.getInsurance(
             _airline,
             _flight,
             _timestamp,

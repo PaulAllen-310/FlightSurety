@@ -54,6 +54,7 @@ contract FlightSuretyData is IFlightSuretyData {
         address account;
         bool insured;
         uint256 insuredFor;
+        uint256 credit;
         bool withdrawn;
     }
 
@@ -61,6 +62,8 @@ contract FlightSuretyData is IFlightSuretyData {
         uint256 id;
         bytes32 flightKey;
         mapping(address => Passenger) passengers;
+        address[] passengerAddresses;
+        bool appliedCredit;
     }
 
     mapping(bytes32 => Insurance) private insurances;
@@ -375,6 +378,9 @@ contract FlightSuretyData is IFlightSuretyData {
             insurances[flightKey].passengers[_passenger].account = _passenger;
             insurances[flightKey].passengers[_passenger].insuredFor = _amount;
             insurances[flightKey].passengers[_passenger].insured = true;
+
+            // Store the passenger address for easy indexing when crediting the insurance.
+            insurances[flightKey].passengerAddresses.push(_passenger);
         }
     }
 
@@ -383,46 +389,73 @@ contract FlightSuretyData is IFlightSuretyData {
         string calldata _flight,
         uint256 _timestamp,
         address _passenger
-    ) external view returns (bool insured, uint256 insuredFor) {
+    )
+        external
+        view
+        returns (
+            bool insured,
+            uint256 insuredFor,
+            uint256 credit
+        )
+    {
         bytes32 flightKey = getFlightKey(_airline, _flight, _timestamp);
 
         insured = insurances[flightKey].passengers[_passenger].insured;
         insuredFor = insurances[flightKey].passengers[_passenger].insuredFor;
+        credit = insurances[flightKey].passengers[_passenger].credit;
 
-        return (insured, insuredFor);
+        return (insured, insuredFor, credit);
     }
 
     /**
      *  @dev Credits payouts to insurees
      */
-    function creditInsurees()
-        external
-        requireIsOperational
-        requireIsCallerAuthorized
-    {}
+    function creditInsurees(
+        address _airline,
+        string calldata _flight,
+        uint256 _timestamp,
+        uint8 _statusCode,
+        uint8 _factor
+    ) external requireIsOperational requireIsCallerAuthorized {
+        bytes32 flightKey = getFlightKey(_airline, _flight, _timestamp);
+
+        // To pay out credit to the passengers, the following rules must be met.
+        // 1. The flight has been registered
+        // 2. At least one passenger has bought insurance for it.
+        // 3. The credit hasn't already been applied to the flight.
+        if (
+            flights[flightKey].registered &&
+            insurances[flightKey].passengerAddresses.length >= 1 &&
+            !insurances[flightKey].appliedCredit
+        ) {
+            // Record the status code that caused the need to credit the passengers.
+            flights[flightKey].statusCode = _statusCode;
+
+            // Indicate that the passengers who bought insurance for the flight have been credited.
+            insurances[flightKey].appliedCredit = true;
+
+            // Provide all the insured passengers with credit.
+            for (
+                uint256 i = 0;
+                i < insurances[flightKey].passengerAddresses.length;
+                i++
+            ) {
+                address passengerAddress = insurances[flightKey]
+                    .passengerAddresses[i];
+                uint256 insuredFor = insurances[flightKey]
+                    .passengers[passengerAddress]
+                    .insuredFor;
+
+                // Record the credit applied to the passenger.
+                insurances[flightKey].passengers[passengerAddress]
+                    .credit = insuredFor.mul(_factor).div(100);
+            }
+        }
+    }
 
     /**
      *  @dev Transfers eligible payout funds to insuree
      *
      */
     function pay() external requireIsOperational requireIsCallerAuthorized {}
-
-    /**
-     * @dev Initial funding for the insurance. Unless there are too many delayed flights
-     *      resulting in insurance payouts, the contract should be self-sustaining
-     *
-     */
-    function fund() public payable requireIsOperational {}
-
-    /********************************************************************************************/
-    /*                                      FALLBACK FUNCTIONS                                  */
-    /********************************************************************************************/
-
-    /**
-     * @dev Fallback function for funding smart contract.
-     *
-     */
-    function() external payable {
-        fund();
-    }
 }

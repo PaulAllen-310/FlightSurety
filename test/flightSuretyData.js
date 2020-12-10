@@ -333,4 +333,44 @@ contract("Flight Surety Data Tests", async (accounts) => {
             assert.fail("Should have been able to buy insurance.");
         }
     });
+
+    /****************************************************************************************/
+    /*  Credit Insurees                                                                     */
+    /****************************************************************************************/
+
+    it(`creditInsurees: An insured passenger should be credited when a flight is delayed`, async function () {
+        const airline = config.testAddresses[1];
+        const passenger = accounts[2];
+        const amount = 10000000;
+        const credit = 10000000 * 1.5;
+
+        try {
+            await config.flightSuretyData.creditInsurees(airline, "XXX1", now, 20, 150);
+
+            let insurance = await config.flightSuretyData.getInsurance(airline, "XXX1", now, passenger);
+            assert.equal(insurance.insured, true, "The expected passenger insured status did not match.");
+            assert.equal(insurance.insuredFor, amount, "The expected passenger insured amount did not match.");
+            assert.equal(insurance.credit, credit, "The expected passenger credit amount did not match.");
+        } catch (e) {
+            assert.fail("Should have been able to credit the insurees.");
+        }
+    });
+
+    it(`creditInsurees: Ensure credited passengers cannot receive credit more than once.`, async function () {
+        const airline = config.testAddresses[1];
+        const passenger = accounts[2];
+        const amount = 10000000;
+        const credit = 10000000 * 1.5;
+
+        try {
+            await config.flightSuretyData.creditInsurees(airline, "XXX1", now, 20, 150);
+
+            let insurance = await config.flightSuretyData.getInsurance(airline, "XXX1", now, passenger);
+            assert.equal(insurance.insured, true, "The expected passenger insured status did not match.");
+            assert.equal(insurance.insuredFor, amount, "The expected passenger insured amount did not match.");
+            assert.equal(insurance.credit, credit, "The expected passenger credit amount did not match.");
+        } catch (e) {
+            assert.fail("Should have gracefully ignored another credit request.");
+        }
+    });
 });
