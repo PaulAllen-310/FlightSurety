@@ -68,6 +68,7 @@ contract FlightSuretyApp {
         uint256 timestamp,
         uint8 statusCode
     );
+    event PassengerWithdrawn(address passenger);
 
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
@@ -301,7 +302,7 @@ contract FlightSuretyApp {
         requireSufficientFunds
         requireRequestFromRegisteredAirline
     {
-        flightSuretyData.updateAirlineToFunded(msg.sender);
+        flightSuretyData.updateAirlineToFunded.value(msg.value)(msg.sender);
         emit AirlineFunded(msg.sender);
     }
 
@@ -398,7 +399,8 @@ contract FlightSuretyApp {
         requireRegisteredFlight(_airline, _flight, _timestamp)
         requireNewInsurance(_airline, _flight, _timestamp)
     {
-        flightSuretyData.buy(
+        //Record that the passenger has bought insurance and pass on the funds to the data contract account.
+        flightSuretyData.buy.value(msg.value)(
             _airline,
             _flight,
             _timestamp,
@@ -413,6 +415,11 @@ contract FlightSuretyApp {
             msg.sender,
             msg.value
         );
+    }
+
+    function withdraw() external payable {
+        flightSuretyData.pay(msg.sender);
+        emit PassengerWithdrawn(msg.sender);
     }
 
     /********************************************************************************************/

@@ -18,7 +18,7 @@ interface IFlightSuretyData {
             bool funded
         );
 
-    function updateAirlineToFunded(address _airline) external;
+    function updateAirlineToFunded(address _airline) external payable;
 
     function getNumberOfFundedAirlines() external view returns (uint256);
 
@@ -58,7 +58,7 @@ interface IFlightSuretyData {
         uint256 _timestamp,
         address _passenger,
         uint256 _amount
-    ) external;
+    ) external payable;
 
     function getInsurance(
         address _airline,
@@ -82,7 +82,7 @@ interface IFlightSuretyData {
         uint8 _factor
     ) external;
 
-    function pay() external;
+    function pay(address payable _passenger) external;
 
     /********************************************************************************************/
     /*                                       UTILITY FUNCTIONS                                  */

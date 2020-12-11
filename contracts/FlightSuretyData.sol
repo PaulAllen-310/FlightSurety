@@ -55,7 +55,6 @@ contract FlightSuretyData is IFlightSuretyData {
         bool insured;
         uint256 insuredFor;
         uint256 credit;
-        bool withdrawn;
     }
 
     struct Insurance {
@@ -68,6 +67,7 @@ contract FlightSuretyData is IFlightSuretyData {
 
     mapping(bytes32 => Insurance) private insurances;
     uint256 private numberOfInsurances;
+    mapping(address => Passenger) private passengersWithCredit;
 
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
@@ -246,6 +246,7 @@ contract FlightSuretyData is IFlightSuretyData {
 
     function updateAirlineToFunded(address _airline)
         public
+        payable
         requireIsOperational
         requireIsCallerAuthorized
     {
@@ -370,7 +371,7 @@ contract FlightSuretyData is IFlightSuretyData {
         uint256 _timestamp,
         address _passenger,
         uint256 _amount
-    ) external requireIsOperational requireIsCallerAuthorized {
+    ) external payable requireIsOperational requireIsCallerAuthorized {
         bytes32 flightKey = getFlightKey(_airline, _flight, _timestamp);
 
         // Be graceful, but ensure the flight has been registered before registering the insurance purchase.
@@ -445,10 +446,20 @@ contract FlightSuretyData is IFlightSuretyData {
                 uint256 insuredFor = insurances[flightKey]
                     .passengers[passengerAddress]
                     .insuredFor;
+                uint256 credit = insuredFor.mul(_factor).div(100);
 
-                // Record the credit applied to the passenger.
+                // Record the credit applied to the passenger for this individual flight.
                 insurances[flightKey].passengers[passengerAddress]
-                    .credit = insuredFor.mul(_factor).div(100);
+                    .credit = credit;
+
+                // Record the credit applied to the passenger for all the flights they purchased insured for.
+                // NOTE: The passenger may not withdraw their credit after each individual flight delay.
+                passengersWithCredit[passengerAddress]
+                    .account = passengerAddress;
+                passengersWithCredit[passengerAddress]
+                    .credit = passengersWithCredit[passengerAddress].credit.add(
+                    credit
+                );
             }
         }
     }
@@ -457,5 +468,19 @@ contract FlightSuretyData is IFlightSuretyData {
      *  @dev Transfers eligible payout funds to insuree
      *
      */
-    function pay() external requireIsOperational requireIsCallerAuthorized {}
+    function pay(address payable _passenger)
+        external
+        requireIsOperational
+        requireIsCallerAuthorized
+    {
+        // If the passenger has some credit built up then transfer it into their account.
+        if (passengersWithCredit[_passenger].account == _passenger) {
+            uint256 credit = passengersWithCredit[_passenger].credit;
+            delete (passengersWithCredit[_passenger]);
+
+            // Only perform the credit transfer when we've removed the risk the passenger
+            // could attempt another withdrawl.
+            _passenger.transfer(credit);
+        }
+    }
 }

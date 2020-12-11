@@ -212,7 +212,7 @@ contract("Flight Surety Data Tests", async (accounts) => {
         assert.equal(airline.funded, false, "The expected first airline funded status did not match.");
 
         try {
-            await config.flightSuretyData.updateAirlineToFunded(registeredAirline);
+            await config.flightSuretyData.updateAirlineToFunded(registeredAirline, { value: "1000000000000000000" });
 
             const updatedAirline = await config.flightSuretyData.getAirline(registeredAirline);
             assert.equal(updatedAirline.funded, true, "The expected first airline funded status was not updated.");
@@ -220,6 +220,7 @@ contract("Flight Surety Data Tests", async (accounts) => {
             const noOfFundedAirlines = await config.flightSuretyData.getNumberOfFundedAirlines();
             assert.equal(noOfFundedAirlines, 2, "The expected number of funded airlines was not updated.");
         } catch (e) {
+            console.log(e);
             assert.fail("The airline funding should have been recorded.");
         }
     });
@@ -324,7 +325,7 @@ contract("Flight Surety Data Tests", async (accounts) => {
         const amount = 10000000;
 
         try {
-            await config.flightSuretyData.buy(airline, "XXX1", now, passenger, amount);
+            await config.flightSuretyData.buy(airline, "XXX1", now, passenger, amount, { value: amount });
 
             let insurance = await config.flightSuretyData.getInsurance(airline, "XXX1", now, passenger);
             assert.equal(insurance.insured, true, "The expected passenger insured status did not match.");
@@ -371,6 +372,26 @@ contract("Flight Surety Data Tests", async (accounts) => {
             assert.equal(insurance.credit, credit, "The expected passenger credit amount did not match.");
         } catch (e) {
             assert.fail("Should have gracefully ignored another credit request.");
+        }
+    });
+
+    /****************************************************************************************/
+    /*  Pay                                                                                 */
+    /****************************************************************************************/
+
+    it(`pay: Purchase an insurance policy`, async function () {
+        const airline = config.testAddresses[1];
+        const passenger = accounts[2];
+        const balance = await web3.eth.getBalance(config.flightSuretyData.address);
+
+        try {
+            await config.flightSuretyData.pay(passenger);
+
+            const newBalance = await web3.eth.getBalance(config.flightSuretyData.address);
+            let insurance = await config.flightSuretyData.getInsurance(airline, "XXX1", now, passenger);
+            assert.equal(newBalance, balance - insurance.credit, "The expected passenger credit amount did not match.");
+        } catch (e) {
+            assert.fail("Should have been able to buy insurance.");
         }
     });
 });
