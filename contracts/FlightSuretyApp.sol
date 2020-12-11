@@ -68,7 +68,7 @@ contract FlightSuretyApp {
         uint256 timestamp,
         uint8 statusCode
     );
-    event PassengerWithdrawn(address passenger);
+    event PassengerWithdrawl(address passenger);
 
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
@@ -419,7 +419,7 @@ contract FlightSuretyApp {
 
     function withdraw() external payable {
         flightSuretyData.pay(msg.sender);
-        emit PassengerWithdrawn(msg.sender);
+        emit PassengerWithdrawl(msg.sender);
     }
 
     /********************************************************************************************/

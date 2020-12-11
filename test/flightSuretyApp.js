@@ -228,4 +228,25 @@ contract("Flight Surety App Tests", async (accounts) => {
             assert.fail("A passenger should not able to buy insurance for a flight more than once.");
         } catch (e) {}
     });
+
+    /****************************************************************************************/
+    /*  Withdraw                                                                            */
+    /****************************************************************************************/
+
+    it("withdraw: Ensure a passenger can withdraw their credit", async () => {
+        let passenger = accounts[8];
+        let airline = accounts[2];
+        const balance = await web3.eth.getBalance(config.flightSuretyData.address);
+
+        try {
+            const tx = await config.flightSuretyApp.withdraw({ from: passenger });
+            truffleAssert.eventEmitted(tx, "PassengerWithdrawl");
+
+            const newBalance = await web3.eth.getBalance(config.flightSuretyData.address);
+            let insurance = await config.flightSuretyData.getInsurance(airline, "XXX1", now, passenger);
+            assert.equal(newBalance, balance - insurance.credit, "The expected passenger credit amount did not match.");
+        } catch (e) {
+            assert.fail("A passenger should be able to withdraw their credit.");
+        }
+    });
 });
