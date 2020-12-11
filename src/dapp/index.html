@@ -21,21 +21,30 @@
 
     <main class="container">
         <div class="text-center border border-light p-5">
-            <p class="h4 mb-4">Register Airline</p>
-            <p>Register an airline and submit initial funding.</p>
+            <p class="h4 mb-4">Flight Surety Insurance</p>
+            <p>Purchase flight surety insurance for any of the flights listed below for 1 ether.</p>
 
-            <label class="form">Airline</label><input type="text" id="airline">
-            <label class="form">Funds</label><input type="text" id="funds">
-            <btn class="btn btn-primary" id="submit-airline">Register Airline</btn>
+            <div class="row top-20">
+                <select id="flight-number" class="browser-default custom-select custom-select-lg mb-3">
+                    <option value="QF01" selected="selected">Qantas Airways - QF01</option>
+                    <option value="QF02">Qantas Airways - QF02</option>
+                    <option value="QF03">Qantas Airways - QF03</option>
+                    <option value="QF04">Qantas Airways - QF04</option>
+                    <option value="QF05">Qantas Airways - QF05</option>
+                    <option value="QF06">Qantas Airways - QF06</option>
+                    <option value="QF07">Qantas Airways - QF07</option>
+                    <option value="QF08">Qantas Airways - QF08</option>
+                    <option value="QF09">Qantas Airways - QF09</option>
+                    <option value="QF10">Qantas Airways - QF10</option>
+                </select>
+            </div>
+
+            <btn class="btn btn-primary btn-lg" id="submit-buy">Buy Insurance</btn>
+            <btn class="btn btn-primary btn-lg" id="submit-oracle">Simulate Delay</btn>
+            <btn class="btn btn-success btn-lg" id="submit-withdrawl">Withdraw</btn>
+
+            <div id="display-wrapper" class="top-20"></div>
         </div>
-    
-        <div class="row top-20">
-            <label class="form">Flight</label>
-            <input type="text" id="flight-number">
-            <btn class="btn btn-primary" id="submit-oracle">Submit to Oracles</btn>
-        </div>
-
-
     </main>
 
 </body>

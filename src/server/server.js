@@ -83,7 +83,7 @@ flightSuretyApp.events.OracleRequest(function (error, event) {
         if (indexes[0] == index || indexes[1] == index || indexes[2] == index) {
             //Randomly select a status code.
             const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
-            flightSuretyApp.methods.submitOracleResponse(index, airline, flight, timestamp, randomStatus).send({ from: oracle });
+            flightSuretyApp.methods.submitOracleResponse(index, airline, flight, timestamp, randomStatus).send({ from: oracle, gas: 6721975 });
         }
     }
 });

@@ -6,28 +6,37 @@ import "./flightsurety.css";
     let result = null;
 
     let contract = new Contract("localhost", () => {
-        DOM.elid("submit-airline").addEventListener("click", () => {
-            let airline = DOM.elid("airline").value;
-            let funds = DOM.elid("funds").value;
+        // Allow the passenger to buy insurance for a flight.
+        DOM.elid("submit-buy").addEventListener("click", () => {
+            let flight = DOM.elid("flight-number").value;
 
-            contract.registerAndFundAirline(airline, funds, (error, result) => {
-                //display("Airlines", "Trigger Airline", [{ label: "Register Airline", error: error, value: result.airline }]);
+            // Write transaction
+            contract.buyInsurance(flight, (error, result) => {
+                display("display-wrapper", "Insurance", "Buy", [{ label: "Insurance Bought", error: error, value: flight }]);
             });
         });
 
-        // User-submitted transaction
+        // Submit a request to the oracles to simulate credit being issued to the passenger.
         DOM.elid("submit-oracle").addEventListener("click", () => {
             let flight = DOM.elid("flight-number").value;
             // Write transaction
             contract.fetchFlightStatus(flight, (error, result) => {
-                display("Oracles", "Trigger oracles", [{ label: "Fetch Flight Status", error: error, value: result.flight + " " + result.timestamp }]);
+                display("display-wrapper", "Oracles", "Trigger oracles", [{ label: "Fetch Flight Status", error: error, value: result.flight + " " + result.timestamp }]);
+            });
+        });
+
+        // Submit a request to withdraw the passengers funds.
+        DOM.elid("submit-withdrawl").addEventListener("click", () => {
+            // Write transaction
+            contract.withdraw((error, result) => {
+                display("display-wrapper", "Withdraw", "Withdraw", [{ label: "Withdrawn", error: error, value: result.passenger }]);
             });
         });
     });
 })();
 
-function display(title, description, results) {
-    let displayDiv = DOM.elid("display-wrapper");
+function display(div, title, description, results) {
+    let displayDiv = DOM.elid(div);
     let section = DOM.section();
     section.appendChild(DOM.h2(title));
     section.appendChild(DOM.h5(description));
