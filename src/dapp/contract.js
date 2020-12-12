@@ -40,7 +40,6 @@ export default class Contract {
             this.testAirline = this.airlines[0];
             this.testPassenger = this.passengers[0];
 
-            // Setup the boilerplate for the dapp
             this._registerAndFundAirline(this.testAirline);
             this._registerFlights(this.testAirline);
 
@@ -51,11 +50,14 @@ export default class Contract {
     // Register and fund the airline, swallowing an error as it could have already been setup.
     async _registerAndFundAirline(_airline) {
         try {
+            console.log("Registering airline: " + _airline);
             await this.flightSuretyApp.methods.registerAirline(_airline).send({ from: this.owner, gas: 6721975 }, (error, result) => {});
         } catch (e) {}
 
         try {
             let amount = this.web3.utils.toWei("10", "ether");
+
+            console.log("Funding airline: " + _airline + ", amount: " + amount);
             await this.flightSuretyApp.methods.fundAirline().send({ from: _airline, value: amount, gas: 6721975 }, (error, result) => {});
         } catch (e) {}
     }
@@ -75,6 +77,8 @@ export default class Contract {
 
         for (let i = 0; i < this.flights.length; i++) {
             try {
+                console.log("Registering flight with airline: " + _airline + ", code: " + this.flights[i] + ", timestamp: " + timestamp);
+
                 await this.flightSuretyApp.methods.registerFlight(_airline, this.flights[i], timestamp).send({ from: _airline, gas: 6721975 }, (error, result) => {});
             } catch (e) {}
         }
@@ -99,6 +103,8 @@ export default class Contract {
             amount: self.web3.utils.toWei("1", "ether"),
         };
 
+        console.log("Buying insurance for airline: " + payload.airline + ", flight: " + payload.flight + ", timestamp: " + payload.timestamp + ", passenger: " + payload.passenger + ", amount: " + payload.amount);
+
         self.flightSuretyApp.methods.buy(payload.airline, payload.flight, payload.timestamp).send({ from: payload.passenger, value: payload.amount, gas: 6721975 }, (error, result) => {
             callback(error, payload);
         });
@@ -109,6 +115,8 @@ export default class Contract {
         let payload = {
             passenger: self.testPassenger,
         };
+
+        console.log("Withdrawing funds for passenger: " + payload.passenger);
 
         self.flightSuretyApp.methods.withdraw().send({ from: payload.passenger, gas: 6721975 }, (error, result) => {
             callback(error, payload);
@@ -121,7 +129,11 @@ export default class Contract {
             passenger: self.testPassenger,
         };
 
+        console.log("Getting credit amount for passenger: " + payload.passenger);
+
         self.flightSuretyApp.methods.getCredit().call({ from: payload.passenger }, (error, result) => {
+            console.log("Result: " + result);
+
             callback(error, result);
         });
     }
@@ -134,8 +146,18 @@ export default class Contract {
             timestamp: timestamp,
         };
 
+        console.log("Simulating delay for airline: " + payload.airline + ", flight: " + payload.flight + ", timestamp: " + payload.timestamp);
+
         self.flightSuretyApp.methods.fetchFlightStatus(payload.airline, payload.flight, payload.timestamp).send({ from: self.owner }, (error, result) => {
             callback(error, payload);
         });
+    }
+
+    passengerBalance() {
+        return this.web3.eth.getBalance(this.testPassenger);
+    }
+
+    contractBalance() {
+        return this.web3.eth.getBalance(this.owner);
     }
 }
