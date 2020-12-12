@@ -2,19 +2,19 @@
 
 ## Project Details
 
-Truffle v5.1.49 (core: 5.1.49)
-Solidity v0.5.16 (solc-js)
-Node v14.9.0
-Web3.js v1.2.1
+-   Truffle v5.1.49 (core: 5.1.49)
+-   Solidity v0.5.16 (solc-js)
+-   Node v14.9.0
+-   Web3.js v1.2.1
 
 ## Run Instructions
 
-npm install
-ganache-cli -a 40
-truffle migrate --reset
-truffle test
-npm run server
-npm run dapp
+-   npm install
+-   ganache-cli -a 40
+-   truffle migrate --reset
+-   truffle test
+-   npm run server
+-   npm run dapp
 
 ## Using the DAPP
 
