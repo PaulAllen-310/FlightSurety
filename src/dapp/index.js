@@ -10,36 +10,39 @@ import "./flightsurety.css";
         DOM.elid("submit-buy").addEventListener("click", () => {
             let flight = DOM.elid("flight-number").value;
 
-            // Write transaction
             contract.buyInsurance(flight, (error, result) => {
-                display("display-wrapper", "Insurance", "Buy", [{ label: "Insurance Bought", error: error, value: flight }]);
+                audit([{ label: "Insurance Bought", error: error, value: flight }]);
             });
         });
 
         // Submit a request to the oracles to simulate credit being issued to the passenger.
         DOM.elid("submit-oracle").addEventListener("click", () => {
             let flight = DOM.elid("flight-number").value;
-            // Write transaction
             contract.fetchFlightStatus(flight, (error, result) => {
-                display("display-wrapper", "Oracles", "Trigger oracles", [{ label: "Fetch Flight Status", error: error, value: result.flight + " " + result.timestamp }]);
+                audit([{ label: "Fetch Flight Status", error: error, value: result.flight + " " + result.timestamp }]);
+            });
+        });
+
+        // Submit a request to check the contract and passenger ether balances.
+        DOM.elid("submit-credit").addEventListener("click", () => {
+            contract.getCredit((error, result) => {
+                var element = document.getElementById("creditBalance");
+                element.value = result;
             });
         });
 
         // Submit a request to withdraw the passengers funds.
         DOM.elid("submit-withdrawl").addEventListener("click", () => {
-            // Write transaction
             contract.withdraw((error, result) => {
-                display("display-wrapper", "Withdraw", "Withdraw", [{ label: "Withdrawn", error: error, value: result.passenger }]);
+                audit([{ label: "Withdrawn", error: error, value: result.passenger }]);
             });
         });
     });
 })();
 
-function display(div, title, description, results) {
-    let displayDiv = DOM.elid(div);
+function audit(results) {
+    let displayDiv = DOM.elid("display-wrapper");
     let section = DOM.section();
-    section.appendChild(DOM.h2(title));
-    section.appendChild(DOM.h5(description));
     results.map((result) => {
         let row = section.appendChild(DOM.div({ className: "row" }));
         row.appendChild(DOM.div({ className: "col-sm-4 field" }, result.label));

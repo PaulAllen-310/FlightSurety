@@ -84,6 +84,11 @@ interface IFlightSuretyData {
 
     function pay(address payable _passenger) external;
 
+    function getCredit(address _passenger)
+        external
+        view
+        returns (uint256 credit);
+
     /********************************************************************************************/
     /*                                       UTILITY FUNCTIONS                                  */
     /********************************************************************************************/

@@ -483,4 +483,16 @@ contract FlightSuretyData is IFlightSuretyData {
             _passenger.transfer(credit);
         }
     }
+
+    function getCredit(address _passenger)
+        external
+        view
+        returns (uint256 credit)
+    {
+        if (passengersWithCredit[_passenger].account == _passenger) {
+            return (passengersWithCredit[_passenger].credit);
+        } else {
+            return (0);
+        }
+    }
 }

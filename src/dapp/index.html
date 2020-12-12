@@ -41,9 +41,29 @@
 
             <btn class="btn btn-primary btn-lg" id="submit-buy">Buy Insurance</btn>
             <btn class="btn btn-primary btn-lg" id="submit-oracle">Simulate Delay</btn>
+            <btn class="btn btn-secondary btn-lg" id="submit-credit">Check Credit</btn>
             <btn class="btn btn-success btn-lg" id="submit-withdrawl">Withdraw</btn>
+        </div>
 
-            <div id="display-wrapper" class="top-20"></div>
+        <div class="text-center border border-light p-5 mt-5">
+            <p class="h4 mb-4">Passenger Credit</p>
+            <p>The passengers credit balance below is displayed for testing purposes only.</p>
+            
+            <form>
+                <div class="row justify-content-md-center">
+                    <div class="col col-lg-2">
+                        <label for="creditBalance">Passenger Credit</label>
+                    </div>
+                    <div class="col-md-auto">
+                        <input type="text" style="width: 220px;" readonly id="creditBalance">
+                    </div>
+                </div>
+            </form> 
+        </div>
+
+        <div class="text-center border border-light p-5 mt-5">
+            <p class="h4 mb-4">Transaction Audit Log</p>
+            <div id="display-wrapper"></div>
         </div>
     </main>
 

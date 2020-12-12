@@ -425,6 +425,12 @@ contract FlightSuretyApp {
         emit PassengerWithdrawl(msg.sender);
     }
 
+    function getCredit() external view returns (uint256 credit) {
+        credit = flightSuretyData.getCredit(msg.sender);
+
+        return (credit);
+    }
+
     /********************************************************************************************/
     /*                                        ORACLE FUNCTIONS                                  */
     /********************************************************************************************/
